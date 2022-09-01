@@ -13,35 +13,36 @@ Help support Kissu and my development processes: https://ko-fi.com/kissu
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
-2. TDD for server initialization 
+2. Routing into presumed locations
+3. TDD for server initialization 
     - start and test for settings directory, create test settings directory, build tables in test-DB, password settings, UI settings and finally verify startup.
     - Future changes to initialization must be done here
-3. TDD to handle mod login 
+4. TDD to handle mod login 
     - Initialize and test for login function passing on correct pass
     - Initialize and test for login function failing on wrong pass
     - Future changes to passwords must be done here
-4. TDD for mod creating a form.
+5. TDD for mod creating a form.
     - A form which will contain all the valid inputs and all realistic combinations of inputs
     - Handle rejection on empty inputs
     - Verify that the form JSON is correct, the form directory is created and it is inserted into the database
     - Future changes to form creation must be done here
-5. TDD for displaying a form to a user.
+6. TDD for displaying a form to a user.
     - ...
-6. TDD to handle a user response.
+7. TDD to handle a user response.
     - ...
-7. TDD to display all forms.
+8. TDD to display all forms.
     - ...
-8. TDD to display all responses to a given form.
+9. TDD to display all responses to a given form.
     - ...
-9. TDD to display a singular response.
+10. TDD to display a singular response.
     - ...
-10. TDD to download all responses to a given form.
+11. TDD to download all responses to a given form.
     - Initialize, create a form and create some test responses
     - Test to determin that the function will properly zip all the given directory properly
     - Will have to unzip to determine correct contents.
-11. TDD to delete a form   
+12. TDD to delete a form   
     - ...
-12. TDD to delete a response
+13. TDD to delete a response
     - ...
 ### Client Side
 Create a React library which will initialize multiple types of displays depending on the page's request
