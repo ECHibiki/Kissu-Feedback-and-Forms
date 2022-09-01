@@ -5,6 +5,10 @@ Kissu's application for handling, creating and linking forms. Usefull for feedba
 - Routing will be manually tested.
 - The UI will be manually tested.
 - After each test case a cleanup will be done. This means constant reinitialization.
+
+## Support
+Help support Kissu and my development processes: https://ko-fi.com/kissu
+
 ## To-Do List
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
