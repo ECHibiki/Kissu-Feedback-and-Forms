@@ -27,23 +27,27 @@ The following is a public list of tests and tasks to be created for this project
     - Verify that the form JSON is correct, the form directory is created and it is inserted into the database
     - Future changes to form creation must be done here
 6. TDD for displaying a form to a user.
-    - ...
+    - Send out the propper JSON for an initialized form
 7. TDD to handle a user response.
-    - ...
+    - Handle inputs on all varieties of potential form inputs
+    - Handle error case
+    - handle success case, inserting new data into SQL and creating response file
 8. TDD to display all forms.
-    - ...
+    - As a mod, get a list of all the forms as JSON
 9. TDD to display all responses to a given form.
-    - ...
+    - As a mod, get a list of all the responses to a form as JSON, these are just methods of acces no extra data
 10. TDD to display a singular response.
-    - ...
+    - As a mod, get the JSON for a respons
 11. TDD to download all responses to a given form.
     - Initialize, create a form and create some test responses
     - Test to determin that the function will properly zip all the given directory properly
     - Will have to unzip to determine correct contents.
 12. TDD to delete a form   
-    - ...
+    - Delete data from DB for the form and all sql entries on it.
+    - Verify the directory and contents within it are unchanged
 13. TDD to delete a response
-    - ...
+    - Delete given post data from the DB
+    - Remove given data file
 ### Client Side
 Create a React library which will initialize multiple types of displays depending on the page's request
 1. Mod Login UI
