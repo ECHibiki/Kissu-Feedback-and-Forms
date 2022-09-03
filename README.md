@@ -4,6 +4,7 @@ Kissu's application for handling, creating and linking forms. Usefull for feedba
 ## Notes
 - Routing will be manually tested.
 - The UI will be manually tested.
+- Templating will be manually tested.
 - After each test case a cleanup will be done. This means constant reinitialization.
 
 ## Support
@@ -13,11 +14,11 @@ Help support Kissu and my development processes: https://ko-fi.com/kissu
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
-2. Routing into presumed locations
-3. TDD for server initialization 
+2. Routing into presumed locations and templating
+3. TDD for server initialization
     - start and test for settings directory, create test settings directory, build tables in test-DB, password settings, UI settings and finally verify startup.
     - Future changes to initialization must be done here
-4. TDD to handle mod login 
+4. TDD to handle mod login
     - Initialize and test for login function passing on correct pass
     - Initialize and test for login function failing on wrong pass
     - Future changes to passwords must be done here

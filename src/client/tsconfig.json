@@ -1,0 +1,18 @@
+{
+
+    "compilerOptions": {
+        "esModuleInterop": true ,
+        "allowSyntheticDefaultImports": true,
+        "outDir": "../../release/public/js/",
+        "sourceMap": true,
+        "noImplicitAny": false,
+
+        "strict": false,
+        "strictNullChecks": false,
+        "strictPropertyInitialization": false,
+
+        "module": "commonjs",
+        "target": "es6",
+        "jsx": "react"
+    }
+}
