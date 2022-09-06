@@ -53,6 +53,8 @@ The following is a public list of tests and tasks to be created for this project
 13. TDD to delete a response
     - Delete given post data from the DB
     - Remove given data file
+14. TDD to edit a form
+    - Test that new data being sent into the application results in propper changes to data
 ### Client Side
 Create a React library which will initialize multiple types of displays depending on the page's request
 1. Mod Login UI
@@ -60,13 +62,17 @@ Create a React library which will initialize multiple types of displays dependin
      - Display of all forms in a select list
      - Selection of list leads to a display of all responses
      - Allows for deleting a form or getting all responses
+     - Allows for edits of forms
      - A form can be viewed on it's own
      - Each response is a dropdown and expanding will render the given one
      - Allows for deleting a response
      - A response can be viewed on it's own
-3. Mod form creation
-    - Verify no empty data is being sent
-4. User form display and submission
+3. Mod form edits
+     - Form behaves similar to form creation but with a pre-initialized input
+     - Old data will remain on already submitted forms, but viewing missing new data should should a NULL
+4. Mod form creation
+     - Verify no empty data is being sent
+5. User form display and submission
      - Past history with given form
      - Shouldn't be done by JS 
      - rather JS adds to the form
