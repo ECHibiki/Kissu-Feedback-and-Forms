@@ -9,6 +9,10 @@ Javascript is handled through a package containing functions which are used by t
 - Templating will be manually tested.
 - After each test case a cleanup will be done. This means constant reinitialization.
 
+## Tech
+ - Gin Server
+ - Twig Templates
+
 ## Support
 Help support Kissu and my development processes: https://ko-fi.com/kissu
 
