@@ -19,6 +19,7 @@ Help support Kissu and my development processes: https://ko-fi.com/kissu
 ## To-Do List
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
+After each TDD, do a refactor which will (hopefully) fix up any poorly designed code 
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
 2. Routing into presumed locations and templating
 3. TDD for server initialization
