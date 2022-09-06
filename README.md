@@ -1,6 +1,7 @@
 # Kissu-Feedback-and-Forms
 Kissu's application for handling, creating and linking forms. Usefull for feedback or moderator applications.<br/>
-Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.
+Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.<br/>
+Javascript is handled through a package containing functions which are used by the HTML pages inside of SCRIPT tags
 
 ## Notes
 - Routing will be manually tested.
