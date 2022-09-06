@@ -1,5 +1,6 @@
 # Kissu-Feedback-and-Forms
-Kissu's application for handling, creating and linking forms. Usefull for feedback or moderator applications.
+Kissu's application for handling, creating and linking forms. Usefull for feedback or moderator applications.<br/>
+Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.
 
 ## Notes
 - Routing will be manually tested.
@@ -29,6 +30,8 @@ The following is a public list of tests and tasks to be created for this project
     - Future changes to form creation must be done here
 6. TDD for displaying a form to a user.
     - Send out the propper JSON for an initialized form
+    - Server sends out HTML that is not rendered by JS
+    - Form needs a verifiable hash to prevent form spam
 7. TDD to handle a user response.
     - Handle inputs on all varieties of potential form inputs
     - Handle error case
@@ -64,6 +67,8 @@ Create a React library which will initialize multiple types of displays dependin
     - Verify no empty data is being sent
 4. User form display and submission
      - Past history with given form
+     - Shouldn't be done by JS 
+     - rather JS adds to the form
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created
