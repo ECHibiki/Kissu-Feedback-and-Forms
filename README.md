@@ -8,6 +8,7 @@ Javascript is handled through a package containing functions which are used by t
 - The UI will be manually tested.
 - Templating will be manually tested.
 - After each test case a cleanup will be done. This means constant reinitialization.
+- Tests should be using fuzzing to verify multiple different possibilities of inputs
 
 ## Tech
  - Gin Server
