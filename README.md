@@ -11,7 +11,6 @@ Javascript is handled through a package containing functions which are used by t
 - Routing will be manually tested.
 - The UI will be manually tested.
 - Templating will be manually tested.
-- Initialization will be manually tested(but test initialization has it's own locations and DB)
 
 ## Tech
  - Gin Server
@@ -29,8 +28,9 @@ The following is a public list of tests and tasks to be created for this project
 - After each test case a cleanup will be done. This means constant reinitialization.
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
 2. Routing into presumed locations and templating
-3. server initialization
+3. TDD for server initialization
     - start and test for settings directory, create test settings directory, build tables in test-DB, password settings, UI settings and finally verify startup.
+    - Future changes to initialization must be done here
 4. TDD to handle mod login
     - Initialize and test for login function passing on correct pass
     - Initialize and test for login function failing on wrong pass
