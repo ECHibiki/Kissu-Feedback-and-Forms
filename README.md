@@ -3,6 +3,10 @@ Kissu's application for handling, creating and linking forms. Usefull for feedba
 Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.<br/>
 Javascript is handled through a package containing functions which are used by the HTML pages inside of SCRIPT tags
 
+## Timetable
+- Sept 20th - 30th
+- 80 hours
+
 ## Notes
 - Routing will be manually tested.
 - The UI will be manually tested.
@@ -20,7 +24,7 @@ Help support Kissu and my development processes: https://ko-fi.com/kissu
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
 - After each TDD, do a refactor which will (hopefully) fix up any poorly designed code 
-- Tests should be using fuzzing to verify multiple different possibilities of inputs(Fuzzing tests can be written after refactor)
+- Tests should be using fuzzing to verify multiple different possibilities of inputs(Fuzzing tests can be written after project completion working towards educational project #2, search+archive)
 - After each test case a cleanup will be done. This means constant reinitialization.
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
 2. Routing into presumed locations and templating
