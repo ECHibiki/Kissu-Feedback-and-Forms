@@ -1,2 +1,2 @@
 cd src/server
-got test
+go test

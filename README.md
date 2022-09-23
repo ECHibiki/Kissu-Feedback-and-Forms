@@ -9,8 +9,8 @@ Javascript is handled through a package containing functions which are used by t
 
 ## Notes
 - Routing will be manually tested.
-- The UI will be manually tested.
-- Templating will be manually tested.
+- The UI(and individual templates) will be manually tested.
+- The Templating engine itself is tested.
 
 ## Tech
  - Gin Server
@@ -23,7 +23,7 @@ Help support Kissu and my development processes: https://ko-fi.com/kissu
 ## To-Do List
 The following is a public list of tests and tasks to be created for this project.
 ### Server Side
-- After each TDD, do a refactor which will (hopefully) fix up any poorly designed code 
+- After each TDD, do a refactor which will (hopefully) fix up any poorly designed code
 - Tests should be using fuzzing to verify multiple different possibilities of inputs(Fuzzing tests can be written after project completion working towards educational project #2, search+archive)
 - After each test case a cleanup will be done. This means constant reinitialization.
 1. Setup: <ins>golang, golang test suite, gin, MySQL</ins> & React
@@ -85,8 +85,23 @@ Create a React library which will initialize multiple types of displays dependin
      - Verify no empty data is being sent
 5. User form display and submission
      - Past history with given form
-     - Shouldn't be done by JS 
+     - Shouldn't be done by JS
      - rather JS adds to the form
+
+## Future Considerations
+ - Fuzz testing needs to be added
+ - https://gin-gonic.com/docs/testing/ shows how to do unit tests with Gin
+   - Notable is "net/http/httptest"
+ - Is twig the right choice?  https://medium.com/@kataras/whats-the-fastest-template-engine-in-go-fdf0cb95899b
+   - Consider https://github.com/eknkc/amber instead of Twig
+ - Further condense files( runGin args for example ) into structs
+ - More reading
+  - on design patterns
+  - password hashing(rate limitting on bcrypt)
+  - db.Exec inputs
+  - Deep read on Gin
+ - Testing variables should be in a single file and reused
+ - Are configuration varaibles set to be passed by reference?
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created
