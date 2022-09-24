@@ -93,3 +93,50 @@ func CleanupTestingInitializations(initialization_folder string){
   }
 
 }
+
+func DoTestingIntializations(initialization_folder string) (*sql.DB , types.ConfigurationInitializerFields , types.ConfigurationSettings){
+  err := os.Mkdir(initialization_folder + "/settings/", 0755)
+  if err != nil {
+    panic("Initialization of project settings folder failed")
+  }
+  err = os.Mkdir(initialization_folder + "/data/", 0755)
+  if err != nil {
+    panic("Initialization of project data folder failed")
+  }
+  init_fields := types.ConfigurationInitializerFields{
+    DBName: "feedback_tests",
+    DBUserName: "testuser",
+    DBCredentials: "",
+    DBAddr: "127.0.0.1",
+    ApplicationPassword: "test-password",
+    StartupPort: ":4960",
+    SiteName: "example.com",
+    ResoruceDirectory: initialization_folder,
+  }
+  cfg := types.ConfigurationSettings{
+    DBName: init_fields.DBName,
+    DBUserName: init_fields.DBUserName,
+    DBCredentials: init_fields.DBCredentials,
+    DBAddr: init_fields.DBAddr,
+    StartupPort: init_fields.StartupPort,
+    SiteName: init_fields.SiteName,
+    ResoruceDirectory: init_fields.ResoruceDirectory,
+  }
+
+  byte_json , err := json.Marshal(cfg)
+  if err != nil {
+    panic(err)
+  }
+  err = ioutil.WriteFile(initialization_folder + "/settings/config.json", byte_json, 0655)
+  if err != nil {
+    panic(err)
+  }
+
+  db := QuickDBConnect(cfg)
+  BuildDBTables( db )
+  return db, init_fields , cfg
+}
+
+func DoFormInitialization(){
+
+}

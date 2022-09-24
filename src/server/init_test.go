@@ -54,6 +54,7 @@ func TestInitialization(t *testing.T) {
   }
   //to create files and data
   createConfigurationFile(initialization_folder , init_fields)
+	createDB(init_fields)
 
   // Manually test the config file exists
   _, err = os.Stat(initialization_folder + "/settings/config.json")

@@ -2,6 +2,7 @@ package main
 
 import (
   "os"
+  "fmt"
   "encoding/json"
   "io/ioutil"
   "database/sql"
@@ -55,27 +56,33 @@ func checkConfigured(root_dir string) bool{
 
   err = json.Unmarshal(cfg_bytes, &cfg)
   if err != nil{
-    panic("Attempting to read config.json resulted in an error")
+    panic("Attempting to read config.json resulted in an error" )
   }
   if cfg.DBName == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. DBName must be set")
   }
   if cfg.DBUserName == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. DBUserName must be set")
   }
   if cfg.DBCredentials == "" {
     // No problem
   }
   if cfg.DBAddr == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. DBAddr should have a value")
   }
   if cfg.StartupPort == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. StartupPort must be set")
   }
   if cfg.SiteName == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. SiteName must be set")
   }
   if cfg.ResoruceDirectory == "" {
+    fmt.Println(cfg)
     panic("Error reading Config.json. ResoruceDirectory must have a value")
   }
   return true
@@ -107,7 +114,17 @@ func createConfigurationFile(root_dir string, init_fields types.ConfigurationIni
     init_fields.ResoruceDirectory = "./"
   }
 
-  byte_json , err := json.Marshal(init_fields)
+  cfg := types.ConfigurationSettings{
+    DBName: init_fields.DBName,
+    DBUserName: init_fields.DBUserName,
+    DBCredentials: init_fields.DBCredentials,
+    DBAddr: init_fields.DBAddr,
+    StartupPort: init_fields.StartupPort,
+    SiteName: init_fields.SiteName,
+    ResoruceDirectory: init_fields.ResoruceDirectory,
+  }
+
+  byte_json , err := json.Marshal(cfg)
   if err != nil {
     panic(err)
   }
@@ -115,16 +132,20 @@ func createConfigurationFile(root_dir string, init_fields types.ConfigurationIni
   if err != nil {
     panic(err)
   }
+}
 
+func createDB( init_fields types.ConfigurationInitializerFields ){
   cfg := types.ConfigurationSettings{
     DBName: init_fields.DBName,
     DBUserName: init_fields.DBUserName,
     DBCredentials: init_fields.DBCredentials,
     DBAddr: init_fields.DBAddr,
+    StartupPort: init_fields.StartupPort,
+    SiteName: init_fields.SiteName,
     ResoruceDirectory: init_fields.ResoruceDirectory,
   }
   db := tools.QuickDBConnect(cfg)
-  tools.BuildDBTables(cfg , db)
+  tools.BuildDBTables( db )
 }
 
 //   db, cfg := initializeFromConfigFile(root_dir)

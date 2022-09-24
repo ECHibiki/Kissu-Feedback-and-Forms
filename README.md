@@ -102,6 +102,10 @@ Create a React library which will initialize multiple types of displays dependin
   - Deep read on Gin
  - Testing variables should be in a single file and reused
  - Are configuration varaibles set to be passed by reference?
+ - Check for panic overuse
+ - Turn some of these files into an extended Gin library for future projects
+ - Give initializers and removers test cases
+ - Read on Golang time library 
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created

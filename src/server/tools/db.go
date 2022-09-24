@@ -7,35 +7,12 @@ import(
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 )
 
-type FormDBFields struct{
-  id int64
-  field_json string
-  updated_at int64
-}
-type ResponseDBFields struct{
-  id int64
-  fk_id int64
-  identifier string
-  response_json string
-  submitted_at int64
-}
-type PasswordsDBFields struct{
-  hashed_password string
-  hash_system string
-  hash_scrambler string
-}
-type LoginsDBFields struct{
-  time_at int64
-  cookie string
-  ip string
-}
-
-func BuildDBTables(init_fields types.ConfigurationSettings  , db *sql.DB ){
-  _, err := db.Exec("CREATE TABLE forms(id INT PRIMARY KEY , field_json TEXT , updated_at INT)")
+func BuildDBTables( db *sql.DB ){
+  _, err := db.Exec("CREATE TABLE forms(id INT AUTO_INCREMENT PRIMARY KEY , field_json TEXT , updated_at INT)")
   if err != nil{
     panic(err)
   }
-  _, err = db.Exec("CREATE TABLE responses(id INT PRIMARY KEY , fk_id INT, identifier VARCHAR(60) , response_json TEXT , submitted_at INT  , FOREIGN KEY (fk_id) REFERENCES forms(id) )")
+  _, err = db.Exec("CREATE TABLE responses(id INT AUTO_INCREMENT PRIMARY KEY , fk_id INT, identifier VARCHAR(60) , response_json TEXT , submitted_at INT  , FOREIGN KEY (fk_id) REFERENCES forms(id) )")
   if err != nil{
     panic(err)
   }
@@ -61,4 +38,27 @@ func QuickDBConnect(cfg types.ConfigurationSettings) *sql.DB{
     panic("DB connect error")
   }
   return db
+}
+
+func WritePassToDB(db *sql.DB , pass types.PasswordsDBFields) error{
+  _ , err := db.Exec("INSERT INTO passwords VALUES( ? , ? , ? )" , pass.HashedPassword , pass.HashSystem , pass.HashScrambler)
+  return err
+}
+
+func FetchPassword(db *sql.DB) (types.PasswordsDBFields , error){
+  q := db.QueryRow("SELECT * FROM passwords");
+  var pass types.PasswordsDBFields
+  err := q.Scan(&pass.HashedPassword , &pass.HashSystem , &pass.HashScrambler)
+  return pass , err
+}
+
+func StoreFormToDB(db *sql.DB , form types.FormDBFields ) error {
+  _ , err := db.Exec("INSERT INTO forms VALUES( NULL , ? , ? )" , form.FieldJSON , form.UpdatedAt)
+  return err
+}
+func GetFormOfID(db *sql.DB , id int64 ) (types.FormDBFields , error) {
+  q := db.QueryRow("SELECT * FROM forms WHERE id=?" , id );
+  var form types.FormDBFields
+  err := q.Scan(&form.ID , &form.FieldJSON , &form.UpdatedAt)
+  return form , err
 }
