@@ -25,6 +25,7 @@ type ConfigurationInitializerFields struct{
 
 type FormDBFields struct{
   ID int64
+  Name string
   FieldJSON string
   UpdatedAt int64
 }

@@ -105,7 +105,8 @@ Create a React library which will initialize multiple types of displays dependin
  - Check for panic overuse
  - Turn some of these files into an extended Gin library for future projects
  - Give initializers and removers test cases
- - Read on Golang time library 
+ - Read on Golang time library
+ - More thoughts on DB construction in the future
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created

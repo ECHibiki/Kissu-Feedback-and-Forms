@@ -101,7 +101,7 @@ func TestInitialization(t *testing.T) {
 
   // Use the should-be set DB connection to:
     // Manually check the DB was created with propper tables
-  _, err = db.Query("SELECT id, field_json, updated_at FROM forms")
+  _, err = db.Query("SELECT id, name, field_json, updated_at FROM forms")
   if err != nil {
     t.Fatal("DB forms error", "DB Name " + cfg.DBName + " err: ", err)
   }

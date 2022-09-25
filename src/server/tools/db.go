@@ -8,7 +8,7 @@ import(
 )
 
 func BuildDBTables( db *sql.DB ){
-  _, err := db.Exec("CREATE TABLE forms(id INT AUTO_INCREMENT PRIMARY KEY , field_json TEXT , updated_at INT)")
+  _, err := db.Exec("CREATE TABLE forms(id INT AUTO_INCREMENT PRIMARY KEY , name VARCHAR(255) UNIQUE , field_json TEXT , updated_at INT)")
   if err != nil{
     panic(err)
   }
@@ -52,13 +52,20 @@ func FetchPassword(db *sql.DB) (types.PasswordsDBFields , error){
   return pass , err
 }
 
-func StoreFormToDB(db *sql.DB , form types.FormDBFields ) error {
-  _ , err := db.Exec("INSERT INTO forms VALUES( NULL , ? , ? )" , form.FieldJSON , form.UpdatedAt)
+func StoreFormToDB(db *sql.DB , db_form types.FormDBFields ) error {
+  // Unique name prevents duplicate entries while auto-incremented ID makes for easy foreign keys
+  _ , err := db.Exec("INSERT INTO forms VALUES( NULL , ? , ? , ? )"  , db_form.Name , db_form.FieldJSON , db_form.UpdatedAt)
   return err
 }
 func GetFormOfID(db *sql.DB , id int64 ) (types.FormDBFields , error) {
   q := db.QueryRow("SELECT * FROM forms WHERE id=?" , id );
-  var form types.FormDBFields
-  err := q.Scan(&form.ID , &form.FieldJSON , &form.UpdatedAt)
-  return form , err
+  var db_form types.FormDBFields
+  err := q.Scan(&db_form.ID , &db_form.Name , &db_form.FieldJSON , &db_form.UpdatedAt)
+  return db_form , err
+}
+func GetFormOfName(db *sql.DB , name string ) (types.FormDBFields , error) {
+  q := db.QueryRow("SELECT * FROM forms WHERE name=?" , name );
+  var db_form types.FormDBFields
+  err := q.Scan(&db_form.ID ,  &db_form.Name , &db_form.FieldJSON , &db_form.UpdatedAt)
+  return db_form , err
 }
