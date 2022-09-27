@@ -69,3 +69,14 @@ func GetFormOfName(db *sql.DB , name string ) (types.FormDBFields , error) {
   err := q.Scan(&db_form.ID ,  &db_form.Name , &db_form.FieldJSON , &db_form.UpdatedAt)
   return db_form , err
 }
+
+func GetResponseByID(db *sql.DB , id int64) (types.ResponseDBFields , error){
+  q := db.QueryRow("SELECT * FROM responses WHERE id=?" , id );
+  var db_response types.ResponseDBFields
+  err := q.Scan(&db_response.ID , &db_response.FK_ID , &db_response.Identifier , &db_response.ResponseJSON , &db_response.SubmittedAt)
+  return db_response , err
+}
+func StoreResponseToDB(db *sql.DB , db_response types.ResponseDBFields) error{
+  _ , err := db.Exec("INSERT INTO responses VALUES( NULL , ? , ? , ? , ? )"  , db_response.FK_ID  , db_response.Identifier , db_response.ResponseJSON, db_response.SubmittedAt)
+  return err
+}

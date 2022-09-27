@@ -5,14 +5,16 @@ import (
   "errors"
   "strings"
   "regexp"
-
+  "mime/multipart"
+  "crypto/md5"
+  "io"
   // "fmt"
 )
 
 type InputType string
 type SelectionCategory string
 type FormValidationError string
-type FormErrorCodes int64
+type FormErrorCode int64
 type FormObjectTag string
 
 const (
@@ -35,17 +37,30 @@ const (
 const (
   GroupMissingMessage   FormValidationError    = "Form subgroup does not contain any items or a description. Add one of these to submit."
   HeadMissingMessage                           = "Form group does not contain any items. Add one to submit."
+
   DuplicateNameMessage                         = "Form field names must be unique. Correct the duplicates."
   DuplicateIDMessage                           = "Form section IDs must be unique. Correct the duplicates."
+
   EmptyIDMessage                               = "IDs must have a value."
   InvalidIDStarterMessage                      = "IDs must start with letters."
   InvalidIDCharactersMessage                   = "IDs can only have the '-', '_', '.' or ':' characters."
   EmptyNameMessage                             = "Names must have a value."
   InvalidNameStarterMessage                    = "Names must start with letters."
   InvalidNameCharactersMessage                 = "Names can only have the '-', '_', '.' or ':' characters."
+  InvalidCheckboxMessage                       = "A checkbox creates fields of the given name followed by 'hypen number'(eg. name-3). A checkbox conflicts with other fields that end with 'hypen number'."
+
+  ResponseMissingMessage                       = "A field is required yet has no response."
+  InvalidInputMessage                          = "A field filled out does not actually exist on the server."
+  // InvalidSelectionIndexMessage                 = "A selection group's position does not make sense."
+  // InvalidSelectionValueMessage                 = "The value of a selection group does not exist on the server."
+  InvalidOptionValueMessage                    = "The value of an options group does not exist on the server."
+  InvalidFileExtMessage                        = "The extention of a file is not permitted on the server."
+  InvalidFileSizeMessage                       = "The size of a file is too large."
+
+  DangerousPathMessage                         = "Path contains illegal characters"
 )
 const (
-  HeadMissingCode  FormErrorCodes = iota
+  HeadMissingCode  FormErrorCode = iota
   GroupMissingCode
 
   DuplicateNameCode
@@ -57,6 +72,17 @@ const (
   EmptyNameCode
   InvalidNameCharactersCode
   InvalidNameStarterCode
+  InvalidCheckboxCode
+
+  ResponseMissingCode
+  InvalidInputCode
+  // InvalidSelectionIndexCode
+  // InvalidSelectionValueCode
+  InvalidOptionValueCode
+  InvalidFileExtCode
+  InvalidFileSizeCode
+
+  DangerousPathCode
 )
 
 const (
@@ -123,7 +149,7 @@ func FormObjectTagFromString(raw_input string) (FormObjectTag , bool ){
 
 type FailureObject struct {
   FailType FormValidationError
-  FailCode FormErrorCodes
+  FailCode FormErrorCode
   FailPosition string
 }
 
@@ -131,8 +157,41 @@ type FormConstruct struct {
   FormName string
   ID string
   Description string
+  // With anon option set to true there is an ability for users to flag themselves as anonymous
+  // Under other conditions there is no anonymity
   AnonOption bool
   FormFields []FormGroup
+}
+
+type MultipartFile struct{
+  File multipart.File
+  Header *multipart.FileHeader
+}
+
+type FormResponse struct {
+  FormName string
+  // The DB ID of the form
+  RelationalID int64
+  // IP or hash of IP
+  ResponderID string
+  Responses map[string]string
+  FileObjects map[string]MultipartFile
+}
+
+type JSONFormResponse struct {
+  FormName string
+  // The DB ID of the form
+  RelationalID int64
+  // IP or hash of IP
+  ResponderID string
+  Responses map[string]string
+  FilePaths map[string]string
+}
+
+func (fr *FormResponse)ScrambleResponderID() {
+  m := md5.New()
+  io.WriteString( m , fr.ResponderID)
+  fr.ResponderID = string(m.Sum(nil))
 }
 
 func (fc *FormConstruct) StorageName() string{
@@ -153,13 +212,14 @@ type FormGroup struct {
   ID string
   Description string
   SubGroup []FormGroup
-  Respondables []UnmarshalerFormObject
+  Respondables []TextArea
 }
 
 //currently a placeholder to gain polymorphic properties
 type FormObject interface{
     ElementType() string
     GetName() string
+    GetRequired() bool
 }
 
 // implement Unmarshaler interface
@@ -240,6 +300,9 @@ func (ta TextArea) ElementType() string {
 func (ta TextArea) GetName() string {
   return ta.Field.Name
 }
+func (ta TextArea) GetRequired() bool {
+  return ta.Field.Required
+}
 
 type GenericInput struct{
   Field Field
@@ -251,6 +314,9 @@ func (gi GenericInput) ElementType() string {
 }
 func (gi GenericInput) GetName() string {
   return gi.Field.Name
+}
+func (gi GenericInput) GetRequired() bool {
+  return gi.Field.Required
 }
 
 type FileInput struct{
@@ -264,6 +330,9 @@ func (fi FileInput) ElementType() string {
 func (fi FileInput) GetName() string {
   return fi.Field.Name
 }
+func (fi FileInput) GetRequired() bool {
+  return fi.Field.Required
+}
 
 type SelectionGroup struct{
   Field Field
@@ -276,9 +345,15 @@ func (sg SelectionGroup) ElementType() string {
 func (sg SelectionGroup) GetName() string {
   return sg.Field.Name
 }
+func (sg SelectionGroup) GetRequired() bool {
+  return sg.Field.Required
+}
 
+// On the question of giving the Checkable field a Name for checkbox...
+// I've decided that the UI will system will associate
 type Checkable struct {
   Label string
+  Value string
 }
 
 type OptionGroup struct{
@@ -292,160 +367,11 @@ func (sg OptionGroup) ElementType() string {
 func (sg OptionGroup) GetName() string {
   return sg.Field.Name
 }
+func (sg OptionGroup) GetRequired() bool {
+  return sg.Field.Required
+}
 
 type OptionItem struct {
   Label string
   Value string
-}
-
-func ValidateForm(form FormConstruct) (error_list []FailureObject) {
-  uniqueness_errors := checkNameAndIDUniqueness(form)
-  if len(uniqueness_errors) > 0 {
-    error_list = append(error_list , uniqueness_errors...)
-  }
-
-  character_errors := checkNameAndIDPropperCharacters(form)
-  if len(character_errors) > 0 {
-    error_list = append(error_list , character_errors...)
-  }
-
-  // uniqueness errors through all other chekcs into confusion
-  // allowing for other errors to display isn't important... not even golang shows all error types at once
-  // this limitation, I guess, issue will apply to situations where a submits without the client
-  if len(uniqueness_errors) > 0 {
-    return error_list
-  }
-
-  struct_errors := checkValidFormStructure(form)
-  if len(struct_errors) > 0 {
-    error_list = append(error_list , struct_errors...)
-  }
-  return error_list
-}
-
-func checkValidFormStructure(form FormConstruct) (error_list []FailureObject)  {
-  if len(form.FormFields) == 0 {
-    return []FailureObject{ { HeadMissingMessage , HeadMissingCode, form.ID } }
-  }
-  var subgroup_stack []FormGroup
-  subgroup_stack = append(subgroup_stack , form.FormFields...)
-  // fail location identified by an ID
-  for len(subgroup_stack) > 0  {
-    item := subgroup_stack[len(subgroup_stack) - 1]
-    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
-    fail_location  := item.ID
-    if fail_location != "" && len(item.Respondables) == 0 && item.Description == "" {
-      error_list = append(error_list , FailureObject{ GroupMissingMessage , GroupMissingCode, fail_location } )
-    }
-    // verify it has validity to it
-    if len(item.SubGroup) != 0 {
-      // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
-    }
-  }
-  return error_list
-}
-
-// For the next few, create a []struct {isID:bool, name:string }.
-// From this struct perform the checks
-func checkNameAndIDUniqueness(form FormConstruct) (error_list []FailureObject)  {
-  if len(form.FormFields) == 0 {
-    return []FailureObject{}
-  }
-  var id_checklist  = map[string]uint{ form.ID : 1 }
-  var failing_ids []string
-  var name_checklist  = make(map[string]uint)
-  var failing_names []string
-  var subgroup_stack []FormGroup
-  subgroup_stack = append(subgroup_stack , form.FormFields...)
-  // fail location identified by an ID
-  for len(subgroup_stack) > 0  {
-    item := subgroup_stack[len(subgroup_stack) - 1]
-    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
-    if _, ok := id_checklist[item.ID] ; !ok {
-      id_checklist[item.ID] = 1;
-    } else if id_checklist[item.ID] != 2 {
-      id_checklist[item.ID] = 2;
-      failing_ids = append(failing_ids , item.ID )
-    }
-    if len(item.Respondables) != 0 {
-      for _ , r := range item.Respondables {
-        name := r.Object.GetName()
-        if _, ok := name_checklist[name] ; !ok {
-          name_checklist[name] = 1;
-        } else if name_checklist[name] != 2 {
-          name_checklist[name] = 2;
-          failing_names = append( failing_names , name )
-        }
-      }
-    }
-    if len(item.SubGroup) != 0 {
-      // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
-    }
-  }
-
-  for _ , id := range failing_ids {
-    error_list = append(error_list , FailureObject{ DuplicateIDMessage , DuplicateIDCode, id } )
-  }
-  for _ , name := range failing_names {
-    error_list = append(error_list , FailureObject{ DuplicateNameMessage , DuplicateNameCode, name } )
-  }
-
-
-  return error_list
-}
-
-func checkNameAndIDPropperCharacters(form FormConstruct) (error_list []FailureObject)  {
-  if len(form.FormFields) == 0 {
-    return []FailureObject{}
-  }
-
-  var ids []string = []string{form.ID}
-  var names []string
-  var subgroup_stack []FormGroup
-  subgroup_stack = append(subgroup_stack , form.FormFields...)
-  // fail location identified by an ID
-  for len(subgroup_stack) > 0  {
-    item := subgroup_stack[len(subgroup_stack) - 1]
-    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
-    ids = append(ids , item.ID )
-    if len(item.Respondables) != 0 {
-      for _ , r := range item.Respondables {
-        name := r.Object.GetName()
-        names = append( names , name )
-      }
-    }
-    if len(item.SubGroup) != 0 {
-      // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
-    }
-  }
-
-
-  invalid_entry := regexp.MustCompile("^[^a-zA-Z]")
-  invalid_body := regexp.MustCompile("[^a-zA-Z0-9\\-_:\\.]")
-  for _ , id := range ids {
-    if len(id) == 0 {
-      error_list = append(error_list , FailureObject{ EmptyIDMessage , EmptyIDCode, id } )
-    }
-    if invalid_entry.Match([]byte(id)) {
-      error_list = append(error_list , FailureObject{ InvalidIDStarterMessage , InvalidIDStarterCode, id } )
-    }
-    if invalid_body.Match([]byte(id)) {
-      error_list = append(error_list , FailureObject{ InvalidIDCharactersMessage , InvalidIDCharactersCode, id } )
-    }
-  }
-  for _ , name := range names {
-    if len(name) == 0 {
-      error_list = append(error_list , FailureObject{ EmptyNameMessage , EmptyNameCode, name } )
-    }
-    if invalid_entry.Match([]byte(name)) {
-      error_list = append(error_list , FailureObject{ InvalidNameStarterMessage , InvalidNameStarterCode, name } )
-    }
-    if invalid_body.Match([]byte(name)) {
-      error_list = append(error_list , FailureObject{ InvalidNameCharactersMessage , InvalidNameCharactersCode, name } )
-    }
-  }
-  return error_list
 }

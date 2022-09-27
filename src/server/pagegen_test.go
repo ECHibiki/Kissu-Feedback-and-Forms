@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenericGeneration(t *testing.T) {
-  var template_path string = "../../test/templates/test-views/test.twig"
+  var template_path string = "../../test/templates/test-views/hello-world-test.twig"
   // Write an html file created from twig templates into the proper directory
   env := templater.ReturnTemplateHandler()
   value_map  := map[string]stick.Value {

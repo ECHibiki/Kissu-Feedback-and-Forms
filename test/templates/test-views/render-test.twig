@@ -1,0 +1,1 @@
+{{'{'}}"FormName":"{{form.FormName}}","ID":"{{form.ID}}","Description":"{{form.Description}}","AnonOption":{{form.AnonOption ? "true" : "false"}},"FormFields":[{% for field in form.FormFields %}{{'{'}}"Label":"{{ field.Label }}","ID":"{{field.ID}}","Description":"{{field.Description}}"{%endfor%},"SubGroup":{{field.SubGroup ? "not-correct" : "null"}}

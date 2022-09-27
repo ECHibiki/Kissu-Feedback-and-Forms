@@ -5,10 +5,11 @@ import (
   "bytes"
 
   "github.com/tyler-sommer/stick"
+  "github.com/tyler-sommer/stick/twig"
 )
 
 func ReturnTemplateHandler() *stick.Env{
-   return stick.New(nil)
+   return twig.New(nil)
 }
 
 func ReturnFilledTemplate(env *stick.Env, template_path string, value_map map[string]stick.Value) (string , error){

@@ -3,6 +3,8 @@ package tools
 import (
   "strings"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/builder"
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
   "fmt"
@@ -10,6 +12,9 @@ import (
   "encoding/json"
   "io/ioutil"
   "os"
+  "mime/multipart"
+  // "net/textproto"
+  // "path/filepath"
 )
 
 func testTesting() bool{
@@ -137,6 +142,174 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB , types.Conf
   return db, init_fields , cfg
 }
 
-func DoFormInitialization(){
+func DoFormInitialization(form_name string, form_id string, db *sql.DB, ){
+  var base_demo_form former.FormConstruct = former.FormConstruct{
+      FormName: form_name ,
+      ID: form_id,
+      Description: "First test form",
+      AnonOption: true,
+      FormFields:[]former.FormGroup{
+        {
+          Label:"test-group1",
+          ID: "test-group1",
+          Description: "Groups and subgroups may have a description, when set it does not need respondables",
+          // SubGroup: []former.FormGroup{},
+          Respondables:[]former.UnmarshalerFormObject{
+              {
+                Type: former.TextAreaTag ,
+                Object: former.TextArea{
+                  Field: former.Field{
+                    Label:"Test-Text-Area",
+                    Name:"Test-TA",
+                    Required:true,
+                  },
+                  Placeholder:"This is a test TA",
+                },
+              } ,
+              {
+                Type: former.GenericInputTag ,
+                Object: former.GenericInput{
+                  Field: former.Field{
+                    Label:"Test-GenericInput",
+                    Name:"Test-GI",
+                    Required:true,
+                  },
+                  Placeholder:"This is a test GI",
+                  Type:former.Text, // former.InputType
+                },
+              } ,
+              {
+                Type: former.FileInputTag ,
+                Object: former.FileInput{
+                  Field: former.Field{
+                    Label:"Test-FileInput",
+                    Name:"Test-FI",
+                    Required:false,
+                  },
+                    AllowedExtRegex:"jpg",
+                    MaxSize:200000, // ~200kb
+                  },
+              },
+              {
+                Type: former.FileInputTag ,
+                Object: former.FileInput{
+                  Field: former.Field{
+                    Label:"Test-FileInput",
+                    Name:"Test-FI-2",
+                    Required:false,
+                  },
+                    AllowedExtRegex:"jpg",
+                    MaxSize:10000000, // ~10mb
+                },
+              } ,
+              {
+                Type: former.SelectionGroupTag ,
+                Object: former.SelectionGroup{
+                  Field: former.Field{
+                    Label:"Test-Chk-SelectGroup",
+                    Name:"Test-Chk-SG",
+                    Required:true,
+                  },
+                  SelectionCategory: former.Checkbox,
+                  CheckableItems:[]former.Checkable{
+                    {Label:"A check Item", Value:"ck1"},
+                    {Label:"Another check Item", Value:"ck2"},
+                    {Label:"final check Item", Value:"ck3"},
+                  },
+                },
+              },
+              {
+                Type: former.SelectionGroupTag,
+                Object: former.SelectionGroup{
+                  Field: former.Field{
+                    Label:"Test-rdo-SelectGroup",
+                    Name:"Test-rdo-SG",
+                    Required:true,
+                  },
+                  SelectionCategory: former.Radio,
+                  CheckableItems:[]former.Checkable{
+                    {Label:"A radio Item", Value:"rd1"},
+                    {Label:"Another radio Item", Value:"rd2"},
+                  },
+                },
+              },
+              {
+                Type: former.OptionGroupTag,
+                Object: former.OptionGroup{
+                  Field: former.Field{
+                    Label:"Test-optGrp",
+                    Name:"Test-optGrp",
+                    Required:true,
+                  },
+                  Options:[]former.OptionItem{
+                    {
+                      Label:"Item 1",
+                      Value: "item-1",
+                    } ,
+                    {
+                      Label:"Item 2",
+                      Value: "item-2",
+                    } ,
+                  },
+                },
+              },
+          },
+        },
+      },
+  }
+  issue_array := builder.ValidateForm(base_demo_form)
+  if len(issue_array) != 0 {
+    fmt.Println(issue_array)
+    panic("Issue array, issues detected")
+  }
+  var insertable_form types.FormDBFields
+  insertable_form , err :=  builder.MakeFormWritable(base_demo_form)
+  if err != nil{
+    panic(err)
+  }
+  err = StoreFormToDB(db, insertable_form)
+  if err != nil{
+    panic(err)
+  }
+}
 
+// Place files into the tmp folder from the testing-data folder
+func CopyTestFilesToMemory(root_dir string , image_names map[string]string ) ( map[string]former.MultipartFile ) {
+  var processed_images map[string]former.MultipartFile = make(map[string]former.MultipartFile)
+
+  for key , fname := range image_names {
+    // type FileHeader struct {
+    // 	Filename string
+    // 	Header   textproto.MIMEHeader
+    // 	Size     int64
+    // 	// contains filtered or unexported fields
+    // }
+
+    // type File interface {
+      // 	io.Reader
+      // 	io.ReaderAt
+      // 	io.Seeker
+      // 	io.Closer
+    // }
+    // File is an interface to access the file part of a multipart message. Its contents may be either stored in memory or on disk. If stored on disk, the File's underlying concrete type will be an *os.File.
+    // Read Only .Open
+    file_handle , err := os.Open(root_dir + "/testing-data/images/" + fname)
+    if err != nil{
+      panic(err)
+    }
+    finfo , err := file_handle.Stat()
+    if err != nil{
+      panic(err)
+    }
+    size := finfo.Size()
+    processed_images[key] = former.MultipartFile {
+      File: file_handle,
+      Header: &multipart.FileHeader{
+        Filename: fname,
+        Header: nil , // we won't use this unless we must
+        Size: size,
+      },
+    }
+  }
+  return  processed_images
 }

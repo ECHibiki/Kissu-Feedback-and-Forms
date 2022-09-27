@@ -44,7 +44,6 @@ func checkIntialized(root_dir string) bool{
     return false
   }
 
-
   return true
 }
 func checkConfigured(root_dir string) bool{
@@ -165,12 +164,8 @@ func initializeFromConfigFile(root_dir string)( *sql.DB , types.ConfigurationSet
 }
 
 func createProjectToFolder(root_dir string){
-  err := os.Mkdir(root_dir + "/settings/", 0755)
-  if err != nil {
-    panic("Initialization of project settings folder failed")
-  }
-  err = os.Mkdir(root_dir + "/data/", 0755)
-  if err != nil {
-    panic("Initialization of project data folder failed")
-  }
+  // We don't want this to result in a crash, but if it can be created then it should
+  _ = os.Mkdir(root_dir + "/settings/", 0755)
+  _ = os.Mkdir(root_dir + "/data/", 0755)
+
 }

@@ -10,15 +10,6 @@ import (
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 )
 
-// TODO ONE: Correct any existing syntax errors
-// TODO Two: Restory invalid structure tests, new func
-// TODO Three: Create invalid character tests, new func
-// TODO Four: Create duplicate field tests, new func
-
-// TODO FIVE: Create duplicate forms of the same name
-
-
-
 func TestConversionBetweenTypesAndInput(t *testing.T){
   var potential_inputs_InputType []string = []string{"color", "Date", "EMAIL", "nUMBER", "it's-invalid"}
   var correct_outputs_InputType []former.InputType = []former.InputType{former.Color , former.Date , former.Email, former.Number, former.Text}
@@ -125,8 +116,8 @@ func TestFormMake(t *testing.T){
                   },
                   SelectionCategory: former.Checkbox,
                   CheckableItems:[]former.Checkable{
-                    {Label:"A check Item"},
-                    {Label:"Another check Item"},
+                    {Label:"A check Item", Value:"ck1"},
+                    {Label:"Another check Item", Value:"ck2"},
                   },
                 },
               },
@@ -140,8 +131,8 @@ func TestFormMake(t *testing.T){
                   },
                   SelectionCategory: former.Radio,
                   CheckableItems:[]former.Checkable{
-                    {Label:"A radio Item"},
-                    {Label:"Another radio Item"},
+                    {Label:"A radio Item", Value:"rd1"},
+                    {Label:"Another radio Item", Value:"rd2"},
                   },
                 },
               },
@@ -170,7 +161,7 @@ func TestFormMake(t *testing.T){
       },
   }
 
-  issue_array := former.ValidateForm(demo_form)
+  issue_array := builder.ValidateForm(demo_form)
   if len(issue_array) != 0 {
     t.Fatal(issue_array)
   }
@@ -255,7 +246,7 @@ func TestInvalidStructureForms(t *testing.T){
       FormFields:[]former.FormGroup{   },
   }
 
-  failure_object := former.ValidateForm(failing_demo_form)
+  failure_object := builder.ValidateForm(failing_demo_form)
   if len(failure_object) != 1 {
     t.Fatal("The number of errors is incorrect" , failure_object)
   }
@@ -340,7 +331,7 @@ func TestInvalidStructureForms(t *testing.T){
     },
   }
 
-  failure_object = former.ValidateForm(an_alternative_failing_demo_form)
+  failure_object = builder.ValidateForm(an_alternative_failing_demo_form)
   if len(failure_object) != 2 {
     t.Error("The number of errors is incorrect" , failure_object)
   } else{
@@ -392,7 +383,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
     },
   }
 
-  failure_object := former.ValidateForm(failing_duplicates_headtosub_form)
+  failure_object := builder.ValidateForm(failing_duplicates_headtosub_form)
   if len(failure_object) != 1 {
     t.Error("A form with an  duplicate ID is throwing incorrect number of errors" , failure_object)
   } else{
@@ -467,7 +458,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
   }
 
   // Follows outer leafs of search tree
-  failure_object = former.ValidateForm(failing_duplicates_subtosub_form)
+  failure_object = builder.ValidateForm(failing_duplicates_subtosub_form)
   if len(failure_object) != 3 {
     t.Error("The number of errors is incorrect" , failure_object)
   } else{
@@ -546,7 +537,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
     },
   }
 
-  failure_object = former.ValidateForm(failing_duplicates_fieldtofield_form)
+  failure_object = builder.ValidateForm(failing_duplicates_fieldtofield_form)
   if len(failure_object) != 1 {
     t.Error("A respondable with duplicate Name is throwing incorrect error numbers" , failure_object)
   } else{
@@ -642,7 +633,7 @@ func TestInvalidCharIDNameFailure(t *testing.T){
       },
     },
   }
-  failure_object := former.ValidateForm(failing_bad_char_form)
+  failure_object := builder.ValidateForm(failing_bad_char_form)
   if len(failure_object) != 9 {
     t.Error("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
   } else{
@@ -735,7 +726,108 @@ func TestInvalidCharIDNameFailure(t *testing.T){
       t.Error("Error fail is not in correct location"  , failure_object[8].FailPosition , "::might as well show a compound error")
     }
   }
+}
 
+func TestConstructionOfCheckboxSelectGroup(t *testing.T){
+  // check group's checkables are given a -#, as in -1, -2 etc., on top of their names
+  // Validation should make sure that there is no case where:
+  /*
+    checkgroup name == cx with checkable len 2
+    input name == cx 3
+    doesn't matter if there is no checkgroup cx-3, if there's an input called cx then it shouldn't have an ending number
+  */
+  var failing_chk_form former.FormConstruct = former.FormConstruct{
+    AnonOption: false,
+    FormName: "checkgroup fail",
+    ID: "chk-f",
+    Description: "A failobject at the location of the checkgroup will fail if there is a conflicting numerical signature with another field",
+    FormFields:[]former.FormGroup{
+      {
+         // This should pass because they have a description
+        Label:"ID validity determined by alphanumeric checks",
+        ID:"starting-with-number-is-bad",
+        Description: "",
+        Respondables: []former.UnmarshalerFormObject{
+          {
+            Type: former.SelectionGroupTag ,
+            Object: former.SelectionGroup{
+              Field: former.Field{
+                Label:"Test-Chk-SelectGroup",
+                Name:"field-a",
+                Required:true,
+              },
+              SelectionCategory: former.Checkbox,
+              CheckableItems:[]former.Checkable{
+                {Label:"A check Item", Value:"ck1"},
+                {Label:"Another check Item", Value:"ck2"},
+              },
+            },
+          },
+          {
+            Type: former.TextAreaTag ,
+            Object: former.TextArea{
+              Field: former.Field{
+                Label:"Test-GenericInput-2",
+                Name:"field-a-100",
+                Required:false,
+              },
+              Placeholder:"This is a test GI-2",
+            } ,
+          },
+          {
+            Type: former.GenericInputTag ,
+            Object: former.GenericInput{
+              Field: former.Field{
+                Label:"Test-GenericInput-2",
+                Name:"field-a-99",
+                Required:false,
+              },
+              Placeholder:"This is a test GI-2",
+              Type:former.Text, // former.InputType
+            } ,
+          },
+          {
+            Type: former.SelectionGroupTag ,
+            Object: former.SelectionGroup{
+              Field: former.Field{
+                Label:"However..... this is correct and should not conflict against chk or the other text fields",
+                Name:"field-a",
+                Required:true,
+              },
+              SelectionCategory: former.Radio,
+              CheckableItems:[]former.Checkable{
+                {Label:"A check Item", Value:"ck1"},
+                {Label:"Another check Item", Value:"ck2"},
+              },
+            },
+          },
+        },
+        SubGroup: []former.FormGroup{ },
+      },
+    },
+  }
 
+/*
+  TODO steps.
+   1) Prevent Text fields(eg. the radio) from conflicting with a checkbox selectgroup
+   2) Create the 'hypen number' fail condition from checkbox selectgroup against the text fields
+*/
 
+  failure_object := builder.ValidateForm(failing_chk_form)
+
+  if len(failure_object) != 1 {
+    t.Error("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
+  }
+
+  if failure_object[0].FailType != former.InvalidCheckboxMessage {
+    t.Error("Error message is not recorded correctly" , failure_object[0])
+  }
+  if failure_object[0].FailCode != former.InvalidCheckboxCode {
+    t.Error("Error message is not recorded correctly" , failure_object[0])
+  }
+  if failure_object[0].FailPosition !=  "field-a"{
+    t.Error("Error fail is not in correct location"  , failure_object[0].FailPosition , "field-a")
+  }
+
+  t.Fatal("Currently this func should be failing")
 }

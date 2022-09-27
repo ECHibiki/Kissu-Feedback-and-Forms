@@ -96,10 +96,10 @@ Create a React library which will initialize multiple types of displays dependin
    - Consider https://github.com/eknkc/amber instead of Twig
  - Further condense files( runGin args for example ) into structs
  - More reading
-  - on design patterns
-  - password hashing(rate limitting on bcrypt)
-  - db.Exec inputs
-  - Deep read on Gin
+    - on design patterns
+    - password hashing(rate limitting on bcrypt)
+    - db.Exec inputs
+    - Deep read on Gin
  - Testing variables should be in a single file and reused
  - Are configuration varaibles set to be passed by reference?
  - Check for panic overuse
@@ -107,7 +107,13 @@ Create a React library which will initialize multiple types of displays dependin
  - Give initializers and removers test cases
  - Read on Golang time library
  - More thoughts on DB construction in the future
-
+ - Read on Golang/Gin's file handling
+ - os.mkdir... how to see if it's a permission or file exists error
+ - "File is an interface to access the file part of a multipart message. Its contents may be either stored in memory or on disk. If stored on disk, the File's underlying concrete type will be an *os.File. " How to select  store on file or memory?
+ - The decision of using methods or functions
+ - Expand the degree of user input validation
+ - DB character limit errors expressed to the user
+ - FailureObject should be a map with the FailPosition as a key
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created
   - Test cases are to handle the largest possible use-case and as of such changes to the function of use cases should be straight forward
