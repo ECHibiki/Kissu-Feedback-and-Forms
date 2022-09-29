@@ -5,6 +5,7 @@ import (
   "time"
   "os"
   "fmt"
+  "strconv"
   "regexp"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
@@ -94,9 +95,7 @@ func checkNameAndIDUniqueness(form former.FormConstruct) (error_list []former.Fa
     return []former.FailureObject{}
   }
   var id_checklist  = map[string]uint{ form.ID : 1 }
-  var failing_ids []string
   var name_checklist  = make(map[string]uint)
-  var failing_names []string
   var subgroup_stack []former.FormGroup
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // fail location identified by an ID
@@ -107,16 +106,29 @@ func checkNameAndIDUniqueness(form former.FormConstruct) (error_list []former.Fa
       id_checklist[item.ID] = 1;
     } else if id_checklist[item.ID] != 2 {
       id_checklist[item.ID] = 2;
-      failing_ids = append(failing_ids , item.ID )
+      error_list = append(error_list , former.FailureObject{ former.DuplicateIDMessage , former.DuplicateIDCode, item.ID } )
     }
     if len(item.Respondables) != 0 {
       for _ , r := range item.Respondables {
-        name := r.Object.GetName()
-        if _, ok := name_checklist[name] ; !ok {
-          name_checklist[name] = 1;
-        } else if name_checklist[name] != 2 {
-          name_checklist[name] = 2;
-          failing_names = append( failing_names , name )
+        sg , is_sj := r.Object.(former.SelectionGroup)
+        if is_sj && sg.SelectionCategory == former.Checkbox{
+          for i, _ := range sg.CheckableItems {
+            name := r.Object.GetName() + "-" + strconv.Itoa(i+1)
+            if _, ok := name_checklist[name] ; !ok {
+              name_checklist[name] = 1;
+            } else if name_checklist[name] != 2 {
+              name_checklist[name] = 2;
+              error_list = append(error_list , former.FailureObject{ former.InvalidCheckboxMessage , former.InvalidCheckboxCode, r.Object.GetName() } )
+            }
+          }
+        } else{
+          name := r.Object.GetName()
+          if _, ok := name_checklist[name] ; !ok {
+            name_checklist[name] = 1;
+          } else if name_checklist[name] != 2 {
+            name_checklist[name] = 2;
+            error_list = append(error_list , former.FailureObject{ former.DuplicateNameMessage , former.DuplicateNameCode, name } )
+          }
         }
       }
     }
@@ -124,13 +136,6 @@ func checkNameAndIDUniqueness(form former.FormConstruct) (error_list []former.Fa
       // add children to the stack
       subgroup_stack = append(subgroup_stack , item.SubGroup...)
     }
-  }
-
-  for _ , id := range failing_ids {
-    error_list = append(error_list , former.FailureObject{ former.DuplicateIDMessage , former.DuplicateIDCode, id } )
-  }
-  for _ , name := range failing_names {
-    error_list = append(error_list , former.FailureObject{ former.DuplicateNameMessage , former.DuplicateNameCode, name } )
   }
 
 

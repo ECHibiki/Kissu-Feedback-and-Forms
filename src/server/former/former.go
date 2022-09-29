@@ -7,8 +7,8 @@ import (
   "regexp"
   "mime/multipart"
   "crypto/md5"
-  "io"
-  // "fmt"
+  // "io"
+  "fmt"
 )
 
 type InputType string
@@ -38,6 +38,7 @@ const (
   GroupMissingMessage   FormValidationError    = "Form subgroup does not contain any items or a description. Add one of these to submit."
   HeadMissingMessage                           = "Form group does not contain any items. Add one to submit."
 
+  DuplicateFormNameMessage                     = "The form name conflicts with another form. Change the name."
   DuplicateNameMessage                         = "Form field names must be unique. Correct the duplicates."
   DuplicateIDMessage                           = "Form section IDs must be unique. Correct the duplicates."
 
@@ -51,11 +52,12 @@ const (
 
   ResponseMissingMessage                       = "A field is required yet has no response."
   InvalidInputMessage                          = "A field filled out does not actually exist on the server."
-  // InvalidSelectionIndexMessage                 = "A selection group's position does not make sense."
-  // InvalidSelectionValueMessage                 = "The value of a selection group does not exist on the server."
+  InvalidSelectionIndexMessage                 = "A selection group's position does not make sense."
+  InvalidSelectionValueMessage                 = "The value of a selection group does not exist on the server."
   InvalidOptionValueMessage                    = "The value of an options group does not exist on the server."
   InvalidFileExtMessage                        = "The extention of a file is not permitted on the server."
   InvalidFileSizeMessage                       = "The size of a file is too large."
+  InvalidExtRegexMessage                       = "The form's regex is invalid."
 
   DangerousPathMessage                         = "Path contains illegal characters"
 )
@@ -63,6 +65,7 @@ const (
   HeadMissingCode  FormErrorCode = iota
   GroupMissingCode
 
+  DuplicateFormNameCode
   DuplicateNameCode
   DuplicateIDCode
 
@@ -76,11 +79,12 @@ const (
 
   ResponseMissingCode
   InvalidInputCode
-  // InvalidSelectionIndexCode
-  // InvalidSelectionValueCode
+  InvalidSelectionIndexCode
+  InvalidSelectionValueCode
   InvalidOptionValueCode
   InvalidFileExtCode
   InvalidFileSizeCode
+  InvalidExtRegexCode
 
   DangerousPathCode
 )
@@ -189,9 +193,7 @@ type JSONFormResponse struct {
 }
 
 func (fr *FormResponse)ScrambleResponderID() {
-  m := md5.New()
-  io.WriteString( m , fr.ResponderID)
-  fr.ResponderID = string(m.Sum(nil))
+  fr.ResponderID = fmt.Sprintf("%x", md5.Sum([]byte(fr.ResponderID)))
 }
 
 func (fc *FormConstruct) StorageName() string{
@@ -212,7 +214,7 @@ type FormGroup struct {
   ID string
   Description string
   SubGroup []FormGroup
-  Respondables []TextArea
+  Respondables []UnmarshalerFormObject
 }
 
 //currently a placeholder to gain polymorphic properties
@@ -335,6 +337,7 @@ func (fi FileInput) GetRequired() bool {
 }
 
 type SelectionGroup struct{
+  // name is a base name
   Field Field
   SelectionCategory SelectionCategory
   CheckableItems []Checkable

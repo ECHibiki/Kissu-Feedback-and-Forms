@@ -1,12 +1,15 @@
 package responder
 
 import (
+  "fmt"
   "os"
   "io"
   "io/ioutil"
   "strings"
   "errors"
   "time"
+  "strconv"
+  "regexp"
   "encoding/json"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
@@ -39,6 +42,7 @@ func ValidateTextResponsesAgainstForm(text_responses map[string]string , form fo
 }
 
 func validateRequiredTextFields(text_responses map[string]string , form former.FormConstruct) (error_list []former.FailureObject){
+
   var subgroup_stack []former.FormGroup
   subgroup_stack = append(subgroup_stack , form.FormFields...)
 
@@ -59,7 +63,7 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
         if is_selection && select_group.SelectionCategory == former.Checkbox {
           answer_found := false
           for i , _ := range select_group.CheckableItems {
-            response , ok := text_responses[ name + "-" + strconv.Itoa(i + 1) ]
+            _ , ok := text_responses[ name + "-" + strconv.Itoa(i + 1) ]
             if ok {
               answer_found = true
             }
@@ -72,12 +76,12 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
           if !ok{
             fail = true
           } else if required && ok {
-            trimed := strings.TrimSpace(response)
-            if len(trimed) == 0 {
+            trimmed := strings.TrimSpace(response)
+            if len(trimmed) == 0 {
               fail = true
             }
           }
-          if fail
+          if fail{
             error_list = append(error_list , former.FailureObject{ former.ResponseMissingMessage , former.ResponseMissingCode, name  })
           }
         }
@@ -95,7 +99,7 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
 
 func validateResponseTextFields(text_responses map[string]string , form former.FormConstruct) (error_list []former.FailureObject){
   var subgroup_stack []former.FormGroup
-  var field_list map[string]former.UnmarshalerFormObject
+  field_list := make(map[string]former.UnmarshalerFormObject)
 
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // Validate required fields and select/option group first pass verification
@@ -108,7 +112,7 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
 
         select_group , is_selection := respondable.Object.(former.SelectionGroup)
         if is_selection && select_group.SelectionCategory == former.Checkbox {
-          for i , v := range select_group.CheckableItems {
+          for i , _ := range select_group.CheckableItems {
             field_list[ name + "-" + strconv.Itoa(i + 1) ] = respondable
           }
         } else{
@@ -124,11 +128,11 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
 
   for field , response := range text_responses{
     respondable , exists := field_list[field]
-    if !exists{
-      error_list = append(error_list , former.FailureObject{ former.InvalidInputMessage , former.InvalidInputCode, name  })
+    if !exists && field != "anon-option"{
+      error_list = append(error_list , former.FailureObject{ former.InvalidInputMessage , former.InvalidInputCode, field  })
       continue
     }
-    options_respondable , is_options := respondable.Object.type(former.OptionGroup)
+    options_respondable , is_options := respondable.Object.(former.OptionGroup)
     if is_options {
       found_value := false
       for _ , opt := range options_respondable.Options {
@@ -138,7 +142,32 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
         }
       }
       if !found_value {
-        error_list = append(error_list , former.FailureObject{ former.InvalidOptionValueMessage , former.InvalidOptionValueCode, name  })
+        error_list = append(error_list , former.FailureObject{ former.InvalidOptionValueMessage , former.InvalidOptionValueCode, field  })
+      }
+    }
+
+    selection_group , is_select := respondable.Object.(former.SelectionGroup)
+    if is_select  {
+      found_value := false
+      for i , chk := range selection_group.CheckableItems {
+        if response == chk.Value {
+          found_value = true
+          if selection_group.SelectionCategory == former.Checkbox {
+            field_index , err := strconv.Atoi(field[strings.LastIndex(field, "-")+1:])
+            if err != nil{
+              fmt.Println("strconv.Atoi(field[:strings.LastIndex(field, )])" , err , field[strings.LastIndex(field, "-")+1:])
+              error_list = append(error_list , former.FailureObject{ former.InvalidSelectionIndexMessage , former.InvalidSelectionIndexCode, field  })
+              continue
+            }
+            if field_index != i+1 {
+              error_list = append(error_list , former.FailureObject{ former.InvalidSelectionIndexMessage , former.InvalidSelectionIndexCode, field  })
+            }
+          }
+          break
+        }
+      }
+      if !found_value {
+        error_list = append(error_list , former.FailureObject{ former.InvalidSelectionValueMessage , former.InvalidSelectionValueCode, field  })
       }
     }
   }
@@ -165,21 +194,35 @@ func validateRequiredFileFields(file_tags map[string]former.MultipartFile , form
       subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
       if len(item.Respondables) != 0 {
         for _ , respondable := range item.Respondables {
+          input , is_file := respondable.Object.(former.FileInput)
+          if !is_file {
+            continue
+          }
           fail := false
           name := respondable.Object.GetName()
           required := respondable.Object.GetRequired()
-          response , ok := file_tags[name]
+          file, ok := file_tags[name]
           if required && !ok{
             fail = true
           } else if ok {
             // begin file verification
-            var FileInput former.MultipartFile = respondable.Object.(former.FileInput)
-            
-
+            if file.Header.Size > input.MaxSize {
+              error_list = append(error_list , former.FailureObject{ former.InvalidFileSizeMessage , former.InvalidFileSizeCode, name  })
+            }
+            r , e := regexp.Compile(input.AllowedExtRegex)
+            if e != nil{
+              error_list = append(error_list , former.FailureObject{ former.InvalidExtRegexMessage , former.InvalidExtRegexCode, name  })
+              continue
+            }
+            if !r.Match([]byte(file.Header.Filename)){
+              error_list = append(error_list , former.FailureObject{ former.InvalidFileExtMessage , former.InvalidFileExtCode, name  })
+            }
+            if strings.Contains(file.Header.Filename , "/"){
+              error_list = append(error_list , former.FailureObject{ former.DangerousPathMessage , former.DangerousPathCode, name  })
+            }
           }
           if fail {
-            fo := former.FailureObject{ former.ResponseMissingMessage , former.ResponseMissingCode, name  }
-            error_list = append(error_list , fo)
+            error_list = append(error_list , former.FailureObject{ former.ResponseMissingMessage , former.ResponseMissingCode, name  })
           }
         }
       }
@@ -193,7 +236,7 @@ func validateRequiredFileFields(file_tags map[string]former.MultipartFile , form
 
 func validateResponseFileFields(file_tags map[string]former.MultipartFile , form former.FormConstruct) (error_list []former.FailureObject) {
   var subgroup_stack []former.FormGroup
-  var field_list map[string]former.UnmarshalerFormObject
+  field_list  := make(map[string]former.UnmarshalerFormObject)
 
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // Validate required fields and select/option group first pass verification
@@ -212,10 +255,10 @@ func validateResponseFileFields(file_tags map[string]former.MultipartFile , form
     }
   }
 
-  for field , response := range text_responses{
-    respondable , exists := field_list[field]
+  for field , _ := range file_tags{
+    _ , exists := field_list[field]
     if !exists{
-      error_list = append(error_list , former.FailureObject{ former.InvalidInputMessage , former.InvalidInputCode, name  })
+      error_list = append(error_list , former.FailureObject{ former.InvalidInputMessage , former.InvalidInputCode, field  })
       continue
     }
   }
@@ -226,68 +269,20 @@ func validateResponseFileFields(file_tags map[string]former.MultipartFile , form
 
 //
 func CreateResponderFolder(root_dir string , response_struct former.FormResponse) error{
-  err := os.Mkdir(root_dir + "/" + response_struct.FormName + "/" + response_struct.ResponderID + "/" , 0755)
+  var err error
+
+  if strings.Contains(response_struct.FormName , "/") || strings.Contains(response_struct.ResponderID , "/") {
+      return errors.New("ResponderID contains illegal character '/'")
+  }
+
+  err = os.Mkdir(root_dir + "/data/" + response_struct.FormName + "/" + response_struct.ResponderID + "/" , 0755)
   if err != nil {
     return err
   }
   if len(response_struct.FileObjects) > 0 {
-    err = os.Mkdir(root_dir + "/" + response_struct.FormName + "/" + response_struct.ResponderID + "/files/" , 0755)
+    err = os.Mkdir(root_dir + "/data/" + response_struct.FormName + "/" + response_struct.ResponderID + "/files/" , 0755)
   }
   return err
-}
-
-func WriteResponsesToJSONFile(root_dir string , resp former.FormResponse) error {
-  storage_dir := root_dir + "/" + resp.FormName + "/" + resp.ResponderID + "/"
-
-  json_resp := ConvertFormResponseToJSONFormResponse(root_dir , resp)
-
-  json_bytes , err := json.MarshalIndent(json_resp , "" , " ")
-  if err != nil {
-    return err
-  }
-  err = ioutil.WriteFile(storage_dir + "responses.json" , json_bytes , 0644)
-  return err
-}
-
-func ConvertFormResponseToJSONFormResponse(root_dir string, resp former.FormResponse) former.JSONFormResponse {
-  json_resp := former.JSONFormResponse{}
-  json_resp.FormName= resp.FormName
-  json_resp.RelationalID = resp.RelationalID
-  json_resp.ResponderID = resp.ResponderID
-  json_resp.Responses = resp.Responses
-  storage_dir := root_dir + "/" + resp.FormName + "/" + resp.ResponderID + "/"
-  for k, v := range(resp.FileObjects) {
-    json_resp.FilePaths[k] = storage_dir + "files/" + v.Header.Filename
-  }
-
-  return json_resp
-}
-
-func WriteFilesFromMultipart(root_dir string , response_struct former.FormResponse) []error{
-  storage_dir := root_dir + "/" + response_struct.FormName + "/" + response_struct.ResponderID + "/files/"
-  var err_list []error = []error{}
-  for _, v := range response_struct.FileObjects {
-    fname := v.Header.Filename
-    if strings.Contains(fname , "/"){
-      tools.LogError( storage_dir , storage_dir +  fname )
-      err_list = append(err_list , errors.New("File " + fname +  " contained illegal characters"))
-      continue
-    }
-    handler, err := os.OpenFile(storage_dir +  fname , os.O_WRONLY|os.O_CREATE, 0644)
-    if err != nil {
-      tools.LogError( storage_dir , storage_dir +  fname )
-      err_list = append(err_list , err)
-      continue
-    }
-    defer handler.Close()
-    _ , err = io.Copy(handler , v.File )
-     if err != nil {
-       tools.LogError( storage_dir , storage_dir +  fname )
-       err_list = append(err_list , err)
-       continue
-     }
-  }
-  return err_list
 }
 
 func FormResponseToDBFormat(response former.FormResponse) (types.ResponseDBFields , error){

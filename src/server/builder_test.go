@@ -170,12 +170,12 @@ func TestFormMake(t *testing.T){
 
   marshaled_form_for_tests , err := json.Marshal(demo_form)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   var insertable_form types.FormDBFields
   insertable_form , err =  builder.MakeFormWritable(demo_form)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   if string(marshaled_form_for_tests) != insertable_form.FieldJSON{
     t.Fatal("Form marshaling did not render an expected result")
@@ -186,15 +186,19 @@ func TestFormMake(t *testing.T){
   if insertable_form.UpdatedAt == 0{
     t.Fatal("Form construction did not set an updated time")
   }
-  err = tools.StoreFormToDB(db, insertable_form)
+  err = builder.StoreForm(db, insertable_form)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
 
   // do it again to garuntee multiple identical forms will not go through
-  err = tools.StoreFormToDB(db, insertable_form)
+  err = builder.StoreForm(db, insertable_form)
   if err == nil{
     t.Fatal("Form was inserted twice, with same name, and passed without error")
+  }
+  should_not_exist_form , err = tools.GetFormOfID(db, 2)
+  if should_not_exist_form != nil && db_form.ID != 0{
+    t.Fatal("Yet still, a form that should not exists does")
   }
 
   var returned_form types.FormDBFields
@@ -208,11 +212,11 @@ func TestFormMake(t *testing.T){
 
   err = json.Unmarshal([]byte(returned_form.FieldJSON), &rebuild_group)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   marshaled_form_for_verify , err := json.Marshal(rebuild_group)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   if string(marshaled_form_for_verify) != string(marshaled_form_for_tests) {
     t.Fatal("unmarshalling process did not preserve data\n\n" , string(marshaled_form_for_verify) , "\n\n" , string(marshaled_form_for_tests));
@@ -223,13 +227,140 @@ func TestFormMake(t *testing.T){
 
   err = builder.CreateFormDirectory(demo_form , cfg)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   safe_name := demo_form_assumed_storage_name
   _, err = os.Stat(initialization_folder + "/data/" + safe_name + "/")
   if err != nil {
     t.Fatal(initialization_folder + "/data/" + safe_name + "/" , err)
   }
+}
+
+func TestNonUniqueFormNameProducesErrorInValidationStep(t *testing.T){
+  var initialization_folder string = "../../test"
+  var err error
+
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
+  defer tools.CleanupTestingInitializations(initialization_folder)
+
+  demo_form_assumed_storage_name := "__Test_form_1"
+  demo_form_name := "../Test form 1"
+  testing.DoFormInitialization(demo_form_name, "character-safe-form1", db , cfg )
+
+  // Insert a similar valid form which fails due to identical name
+  var demo_form former.FormConstruct = former.FormConstruct{
+      FormName: demo_form_name ,
+      ID: "character-safe-form1",
+      Description: "First test form",
+      AnonOption: false,
+      FormFields:[]former.FormGroup{
+        {
+          Label:"test-group1",
+          ID: "test-group1",
+          Description: "Groups and subgroups may have a description, when set it does not need respondables",
+          // SubGroup: []former.FormGroup{},
+          Respondables:[]former.UnmarshalerFormObject{
+              {
+                Type: former.TextAreaTag ,
+                Object: former.TextArea{
+                  Field: former.Field{
+                    Label:"Test-Text-Area",
+                    Name:"Test-TA",
+                    Required:false,
+                  },
+                  Placeholder:"This is a test TA",
+                },
+              } ,
+              {
+                Type: former.GenericInputTag ,
+                Object: former.GenericInput{
+                  Field: former.Field{
+                    Label:"Test-GenericInput",
+                    Name:"Test-GI",
+                    Required:true,
+                  },
+                  Placeholder:"This is a test GI",
+                  Type:former.Text, // former.InputType
+                },
+              } ,
+              {
+                Type: former.FileInputTag ,
+                Object: former.FileInput{
+                  Field: former.Field{
+                    Label:"Test-FileInput",
+                    Name:"Test-FI",
+                    Required:false,
+                  },
+                  AllowedExtRegex:".*",
+                  MaxSize:10000000,
+                },
+              } ,
+              {
+                Type: former.SelectionGroupTag ,
+                Object: former.SelectionGroup{
+                  Field: former.Field{
+                    Label:"Test-Chk-SelectGroup",
+                    Name:"Test-Chk-SG",
+                    Required:true,
+                  },
+                  SelectionCategory: former.Checkbox,
+                  CheckableItems:[]former.Checkable{
+                    {Label:"A check Item", Value:"ck1"},
+                    {Label:"Another check Item", Value:"ck2"},
+                  },
+                },
+              },
+              {
+                Type: former.SelectionGroupTag,
+                Object: former.SelectionGroup{
+                  Field: former.Field{
+                    Label:"Test-rdo-SelectGroup",
+                    Name:"Test-rdo-SG",
+                    Required:true,
+                  },
+                  SelectionCategory: former.Radio,
+                  CheckableItems:[]former.Checkable{
+                    {Label:"A radio Item", Value:"rd1"},
+                    {Label:"Another radio Item", Value:"rd2"},
+                  },
+                },
+              },
+              {
+                Type: former.OptionGroupTag,
+                Object: former.OptionGroup{
+                  Field: former.Field{
+                    Label:"Test-optGrp",
+                    Name:"Test-optGrp",
+                    Required:true,
+                  },
+                  Options:[]former.OptionItem{
+                    {
+                      Label:"Item 1",
+                      Value: "item-1",
+                    } ,
+                    {
+                      Label:"Item 2",
+                      Value: "item-2",
+                    } ,
+                  },
+                },
+              },
+          },
+        },
+      },
+  }
+
+  issue_array := builder.ValidateForm(demo_form)
+  if len(issue_array) == 0 {
+    t.Fatal("The issue array is empty" , issue_array)
+  }
+  if issue_array[0].Message != former.DuplicateFormNameMessage {
+    t.Fatal("Improper error message for duplicate form name" , issue_array[0].Message)
+  }
+  if issue_array[0].Message != former.DuplicateFormNameCode{
+    t.Fatal("Improper error code for duplicate form name" , issue_array[0].Code)
+  }
+
 }
 
 
@@ -749,21 +880,6 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
         Description: "",
         Respondables: []former.UnmarshalerFormObject{
           {
-            Type: former.SelectionGroupTag ,
-            Object: former.SelectionGroup{
-              Field: former.Field{
-                Label:"Test-Chk-SelectGroup",
-                Name:"field-a",
-                Required:true,
-              },
-              SelectionCategory: former.Checkbox,
-              CheckableItems:[]former.Checkable{
-                {Label:"A check Item", Value:"ck1"},
-                {Label:"Another check Item", Value:"ck2"},
-              },
-            },
-          },
-          {
             Type: former.TextAreaTag ,
             Object: former.TextArea{
               Field: former.Field{
@@ -779,7 +895,7 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
             Object: former.GenericInput{
               Field: former.Field{
                 Label:"Test-GenericInput-2",
-                Name:"field-a-99",
+                Name:"field-a-2",
                 Required:false,
               },
               Placeholder:"This is a test GI-2",
@@ -801,13 +917,28 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
               },
             },
           },
+          {
+            Type: former.SelectionGroupTag ,
+            Object: former.SelectionGroup{
+              Field: former.Field{
+                Label:"Test-Chk-SelectGroup",
+                Name:"field-a",
+                Required:true,
+              },
+              SelectionCategory: former.Checkbox,
+              CheckableItems:[]former.Checkable{
+                {Label:"A check Item", Value:"ck1"},
+                {Label:"Another check Item", Value:"ck2"},
+              },
+            },
+          },
         },
         SubGroup: []former.FormGroup{ },
       },
     },
   }
 
-/*
+/*t look at all the forks of
   TODO steps.
    1) Prevent Text fields(eg. the radio) from conflicting with a checkbox selectgroup
    2) Create the 'hypen number' fail condition from checkbox selectgroup against the text fields
@@ -816,11 +947,11 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
   failure_object := builder.ValidateForm(failing_chk_form)
 
   if len(failure_object) != 1 {
-    t.Error("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
+    t.Fatal("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
   }
 
   if failure_object[0].FailType != former.InvalidCheckboxMessage {
-    t.Error("Error message is not recorded correctly" , failure_object[0])
+    t.Error("Error message is not recorded correctly" , failure_object[0].FailType , former.InvalidCheckboxMessage)
   }
   if failure_object[0].FailCode != former.InvalidCheckboxCode {
     t.Error("Error message is not recorded correctly" , failure_object[0])
@@ -828,6 +959,124 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
   if failure_object[0].FailPosition !=  "field-a"{
     t.Error("Error fail is not in correct location"  , failure_object[0].FailPosition , "field-a")
   }
+}
 
-  t.Fatal("Currently this func should be failing")
+func TestEditOfForm(t *testing.T){
+
+  var initialization_folder string = "../../test"
+  var err error
+
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
+  defer tools.CleanupTestingInitializations(initialization_folder)
+
+  first_name := "Test form 1"
+  first_store := "Test_form_1"
+  tools.DoFormInitialization(first_name , "a-simple-identifier" , db , cfg)
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  // Moslty copying the test from TestFormMake(t) but with more relevant methods
+  // Doesn't build folders since they already exist
+  // DB is updated instead of created and new fields should be considered as their nil value
+  // The form name itself can not be changed, for obvious reasons
+  var replacement_form former.FormConstruct = former.FormConstruct{
+      FormName: replacement_form_name ,
+      ID: "id-changed",
+      Description: "A now changed form",
+      AnonOption: true,
+      FormFields:[]former.FormGroup{
+        {
+          Label:"test-group1",
+          ID: "test-group1",
+          Description: "Groups and subgroups may have a description, when set it does not need respondables",
+          // SubGroup: []former.FormGroup{},
+          Respondables:[]former.UnmarshalerFormObject{
+              {
+                Type: former.TextAreaTag ,
+                Object: former.TextArea{
+                  Field: former.Field{
+                    Label:"Test-Text-Area",
+                    Name:"Test-TA",
+                    Required:false,
+                  },
+                  Placeholder:"This is a test TA",
+                },
+              } ,
+              {
+                Type: former.GenericInputTag ,
+                Object: former.GenericInput{
+                  Field: former.Field{
+                    Label:"Test-GenericInput",
+                    Name:"Test-GI",
+                    Required:true,
+                  },
+                  Placeholder:"This is a test GI",
+                  Type:former.Text, // former.InputType
+                },
+              } ,
+              {
+                Type: former.FileInputTag ,
+                Object: former.FileInput{
+                  Field: former.Field{
+                    Label:"Test-FileInput",
+                    Name:"Test-FI",
+                    Required:false,
+                  },
+                  AllowedExtRegex:".*",
+                  MaxSize:10000000,
+                },
+              } ,
+          },
+        },
+      },
+  }
+
+  issue_array := builder.ValidateForm(replacement_form)
+  if len(issue_array) != 0 {
+    t.Fatal(issue_array)
+  }
+  // Verify the name is unchanged or any other important fields are not altered
+  issue_array = builder.ValidateFormEdit(replacement_form)
+  if len(issue_array) != 0 {
+    t.Fatal(issue_array)
+  }
+
+  marshaled_form_for_tests , err := json.Marshal(replacement_form)
+  if err != nil{
+    t.Fatal(err)
+  }
+  var insertable_form types.FormDBFields
+  insertable_form , err =  builder.MakeFormWritable(replacement_form)
+  if err != nil{
+    t.Fatal(err)
+  }
+  if string(marshaled_form_for_tests) != insertable_form.FieldJSON{
+    t.Fatal("Form marshaling did not render an expected result")
+  }
+  if insertable_form.ID != 0{
+    t.Fatal("Form construction set a value for ID")
+  }
+  if insertable_form.UpdatedAt == 0{
+    t.Fatal("Form construction did not set an updated time")
+  }
+
+  err = builder.UpdateForm(db, 1, insertable_form)
+  if err != nil{
+    t.Fatal(err)
+  }
+
+  var returned_form types.FormDBFields
+  var rebuild_group former.FormConstruct
+  returned_form , err = tools.GetFormOfID(db, 1)
+  if returned_form.FieldJSON != string(marshaled_form_for_tests){
+    t.Fatal("Fields returns from DB are not same as marshaled");
+  }
+  marshaled_form_for_verify , err := json.Marshal(rebuild_group)
+  if err != nil{
+    t.Fatal(err)
+  }
+  if string(marshaled_form_for_verify) != string(marshaled_form_for_tests) {
+    t.Fatal("unmarshalling process did not preserve data\n\n" , string(marshaled_form_for_verify) , "\n\n" , string(marshaled_form_for_tests));
+  }
 }

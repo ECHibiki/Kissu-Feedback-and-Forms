@@ -14,17 +14,17 @@ func TestRetrieval(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , _ := tools.DoTestingIntializations(initialization_folder)
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
   defer tools.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_id_check_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_id_check_name , "a-simple-identifier" , db)
+  tools.DoFormInitialization(demo_form_id_check_name , "a-simple-identifier" , db , cfg)
 
   demo_form_name_check_assumed_storage_name := "__alternative_test_form_1"
   demo_form_name_check_name := "../alternative test form 1"
-  tools.DoFormInitialization(demo_form_name_check_name , "a-simple-identifier" , db)
+  tools.DoFormInitialization(demo_form_name_check_name , "a-simple-identifier" , db , cfg)
 
 // ---- Forget the initialization of fields
 

@@ -15,14 +15,14 @@ func TestInputStorage(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , _ := tools.DoTestingIntializations(initialization_folder)
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
   defer tools.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db)
+  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
 
   var files map[string]former.MultipartFile = tools.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
 
@@ -37,9 +37,9 @@ func TestInputStorage(t *testing.T){
       "anon-option":"true",
       "Test-TA":"../some text\n\n\tasdf",
       "Test-GI":"../some text",
-      "Test-Chk-SG-1":"ck2", // in this case the check group has been assigned ...-1 from the algorithm
-      "Test-Chk-SG-3":"ck2", // in this case the check group has been assigned ...-3 from the algorithm
-      "Test-rdo-SG-99":"rd1", // In this case the radio group is just called ...-99 from the user
+      "Test-Chk-SG-1":"ck1", // in this case the check group has been assigned ...-1 from the algorithm
+      "Test-Chk-SG-3":"ck3", // in this case the check group has been assigned ...-3 from the algorithm
+      "Test-rdo-SG":"rd1", // In this case the radio group is just called
       "Test-optGrp":"item-2",
     },
     // File paths are distinct in that their data effects file storage.
@@ -54,12 +54,12 @@ func TestInputStorage(t *testing.T){
   //Get a form
   form, err := tools.GetFormOfID(db , demo_response.RelationalID)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   var rebuild_group former.FormConstruct
   err = json.Unmarshal([]byte(form.FieldJSON), &rebuild_group)
   if err != nil{
-    panic( err )
+    t.Fatal( err )
   }
 
 
@@ -70,7 +70,7 @@ func TestInputStorage(t *testing.T){
   issue_array := append(text_issue_array, file_issue_array...)
   // It should pass so write to the propper locations
   if len(issue_array) > 0 {
-    t.Fatal("There should be no errors here")
+    t.Fatal("There should be no errors here" , issue_array)
   }
 
   // check to scramble IP
@@ -84,7 +84,7 @@ func TestInputStorage(t *testing.T){
 
   err = responder.CreateResponderFolder( initialization_folder , demo_response )
   if err != nil{
-    t.Fatal("Failed to create response folder")
+    t.Fatal("Failed to create response folder" , err)
   }
   _, err = os.Stat(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/")
   if err != nil{
@@ -99,18 +99,17 @@ func TestInputStorage(t *testing.T){
   if len(error_list) != 0 {
     t.Fatal(error_list)
   }
-  _, err = os.Stat(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/test-file-1.jpg")
+  _, err = os.Stat(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/files/Test-FI-test-file-1.jpg")
   if err != nil{
-      t.Error(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/test-file-1.jpg")
+      t.Error(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/files/Test-FI-test-file-1.jpg")
   }
 
 
   // A combination of Responses and File Locations listing a URL for file download where it will be served
-  err = responder.WriteResponsesToJSONFile(initialization_folder , demo_response)
+  err = tools.WriteResponsesToJSONFile(initialization_folder , demo_response)
   if err != nil{
       t.Fatal("Writting JSON failed")
   }
-
   json_file , err := ioutil.ReadFile(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/responses.json")
   if err != nil{
       t.Fatal(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/responses.json is missing")
@@ -124,11 +123,11 @@ func TestInputStorage(t *testing.T){
   original_json_resp := responder.ConvertFormResponseToJSONFormResponse(initialization_folder , demo_response)
   testing_json_r,err := json.Marshal(json_resp)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   original_testing_json_r, err := json.Marshal(original_json_resp)
   if err != nil{
-    panic(err)
+    t.Fatal(err)
   }
   if string(testing_json_r) != string(original_testing_json_r){
       t.Error("Data was lost when writting json file")
@@ -143,14 +142,16 @@ func TestInputStorage(t *testing.T){
   if err != nil {
     t.Fatal(err)
   }
-  resp , err := tools.GetResponseByID(db , demo_response_db_fields.ID)
+
+  resp , err := tools.GetResponseByID(db , 1)
   if err != nil {
-    panic(err)
+    t.Fatal(err)
   }
+  resp.ID = demo_response_db_fields.ID
   a,_ := json.Marshal(demo_response_db_fields)
   b,_ := json.Marshal(resp)
   if string(a) != string(b) {
-    t.Fatal("GetResponseByID: Retrieval from DB did not produce expected results")
+    t.Fatal("GetResponseByID: Retrieval from DB did not produce expected results\n\t" , string(a) , "\n\t", string(b))
   }
 }
 
@@ -158,14 +159,14 @@ func TestInputRejection(t * testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , _ := tools.DoTestingIntializations(initialization_folder)
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
   defer tools.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db)
+  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
 
 
   // The Value type should be that which FormFile produces
@@ -191,12 +192,12 @@ func TestInputRejection(t * testing.T){
   //Get a form
   form, err := tools.GetFormOfID(db , demo_response_fail.RelationalID)
   if err != nil {
-    panic(err)
+    t.Fatal(err)
   }
   var rebuild_group former.FormConstruct
   err = json.Unmarshal([]byte(form.FieldJSON), &rebuild_group)
   if err != nil{
-    panic( err )
+    t.Fatal( err )
   }
   // Validate responses
   // Check files are valid
@@ -206,54 +207,39 @@ func TestInputRejection(t * testing.T){
   issue_array := append(text_issue_array, file_issue_array...)
   // It should pass so write to the propper locations
   if len(issue_array) != 8{
-    t.Fatal("Error count mismatched, wants 8 has ", len(issue_array))
+    t.Error("Error count mismatched, wants 8 has ")
   }
   for i, e := range issue_array {
     var fm former.FormValidationError
     var fc former.FormErrorCode
     if e.FailPosition == "Test-TA" {
-      if i != 0{
-        t.Error("Fail TA in wrong location")
-      }
       fm = former.ResponseMissingMessage
       fc = former.ResponseMissingCode
     } else if e.FailPosition == "Test-GI"{
-      if i != 1{
-        t.Error("Fail GI in wrong location")
-      }
+      fm = former.ResponseMissingMessage
+      fc = former.ResponseMissingCode
+    } else if e.FailPosition == "Test-Chk-SG"{
       fm = former.ResponseMissingMessage
       fc = former.ResponseMissingCode
     } else if e.FailPosition == "Test-Chk-SG-9999"{
-      if i == 2{
-        fm = former.InvalidSelectionIndexMessage
-        fc = former.InvalidSelectionIndexCode
-      } else if i == 3 {
-        fm = former.InvalidSelectionValueMessage
-        fc = former.InvalidSelectionValueCode
-      } else{
-        t.Error("Fail Chk in wrong location")
-      }
+        fm = former.InvalidInputMessage
+        fc = former.InvalidInputCode
     } else if e.FailPosition == "Test-rdo-SG"{
-      if i != 4{
-        t.Error("Fail rdo in wrong location")
-      }
       fm = former.InvalidSelectionValueMessage
       fc = former.InvalidSelectionValueCode
-    } else if e.FailPosition == "Test-optGrp"{
-      if i != 5{
-        t.Error("Fail opt in wrong location")
-      }
+
+    }  else if e.FailPosition == "Test-optGrp"{
       fm = former.InvalidOptionValueMessage
       fc = former.InvalidOptionValueCode
     } else if e.FailPosition == "Test-FI"{
       // AllowedExtRegex string
       // MaxSize int64
       if i == 6{
-        fm = former.InvalidFileExtMessage
-        fc = former.InvalidFileExtCode
-      } else if i == 7{
         fm = former.InvalidFileSizeMessage
         fc = former.InvalidFileSizeCode
+      } else if i == 7{
+        fm = former.InvalidFileExtMessage
+        fc = former.InvalidFileExtCode
       } else{
         t.Error("Fail FI in wrong location")
       }
@@ -268,13 +254,12 @@ func TestInputRejection(t * testing.T){
     } */
 
     if fm != e.FailType {
-      t.Error("Failtype missmatch on " , e , ", is " , fm )
+      t.Error("Index" , i , "Failtype missmatch on " , e , ", is " , fm )
     }
     if fc != e.FailCode{
       t.Error("Failcode missmatch on" , e , ", is " , fc )
     }
   }
-  t.Error("Checkbox uniqueness not established yet")
 }
 
 func TestIllegalFName(t *testing.T){
@@ -282,14 +267,14 @@ func TestIllegalFName(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , _ := tools.DoTestingIntializations(initialization_folder)
+  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
   defer tools.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db)
+  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
 
 
   demo_response_fail := former.FormResponse{
@@ -311,12 +296,12 @@ func TestIllegalFName(t *testing.T){
   //Get a form
   form, err := tools.GetFormOfID(db , demo_response_fail.RelationalID)
   if err != nil {
-    panic(err)
+    t.Fatal(err)
   }
   var rebuild_group former.FormConstruct
   err = json.Unmarshal([]byte(form.FieldJSON), &rebuild_group)
   if err != nil{
-    panic( err )
+    t.Fatal( err )
   }
 
   var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(demo_response_fail.FileObjects , rebuild_group)
@@ -330,4 +315,8 @@ func TestIllegalFName(t *testing.T){
   if file_issue_array[0].FailCode !=  former.DangerousPathCode{
     t.Fatal("Fail code missmatch for illegal fname" , file_issue_array[0] , former.DangerousPathCode)
   }
+}
+
+func TestSamePersonReplyingTwice(t *testing.T){
+  t.Fatal("unimplemented" , "Should not fail, but upon realizing, update the existing data")
 }
