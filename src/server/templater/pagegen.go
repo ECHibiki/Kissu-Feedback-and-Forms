@@ -12,6 +12,10 @@ func ReturnTemplateHandler() *stick.Env{
    return twig.New(nil)
 }
 
+func ReturnFileSystemTemplateHandler(root_dir string) *stick.Env{
+  return stick.New(stick.NewFilesystemLoader(root_dir))
+}
+
 func ReturnFilledTemplate(env *stick.Env, template_path string, value_map map[string]stick.Value) (string , error){
   template_bytes, err := ioutil.ReadFile(template_path)
   if err != nil{

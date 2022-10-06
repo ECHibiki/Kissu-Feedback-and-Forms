@@ -1,0 +1,36 @@
+<DIV id="{{ field.ID }}">
+  <STRONG>{{ field.Label }}</STRONG><br/>
+  <P>{{ field.Description }}</P>
+  {% for respondable in field.Respondables %}
+    {% if respondable.GetType() == "textarea" %}
+      <LABEL> {{respondable.Field.Label}}:<br/>
+      <TEXTAREA name="{{respondable.Field.Name}} required="{{ respondable.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Placeholder}}"></TEXTAREA> </LABEL>
+    {% elseif respondable.GetType() == "genericinput" %}
+      <LABEL> {{respondable.Field.Label}}:<br/>
+      <INPUT name="{{respondable.Field.Name}} required="{{ respondable.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Placeholder}}" type="{{respondable.Type}}" /> </LABEL>
+    {% elseif respondable.GetType() == "fileinput" %}
+      <LABEL> {{respondable.Field.Label}}:<br/>
+      <INPUT name="{{respondable.Field.Name}} required="{{ respondable.Field.Required ? "true" : "false" }}" type="file" data-allowed-regex="{{ respondable.AllowedExtRegex }}"  data-max-size="{{ respondable.MaxSize }}" /> </LABEL>
+    {% elseif respondable.GetType() == "selectiongroup" %}
+      <DIV id="{{respondable.Field.Name}}">
+        <P>{{respondable.Field.Label}}</P>
+        {% for check in respondable.CheckableItems %}
+          <LABEL>{{ check.Label }}<INPUT type="{{ respondable.SelectionCategory }}" data-required="{{ respondable.Field.Required ? "true" : "false" }}" name="{{respondable.Field.Name}}-{{ loop.index + 1 }}" value="{{check.Value}}" /></LABEL>
+        {% endfor %}
+      </DIV>
+    {% elseif respondable.GetType() == "optiongroup" %}
+      <LABEL> {{respondable.Field.Label}}:<br/>
+        <SELECT name="{{respondable.Field.Name}} required="{{ respondable.Field.Required ? "true" : "false" }}" >
+          {% for opt in respondable.Options %}
+            <OPTION value="{{opt.Value}}">{{ opt.Value }}</OPTION>
+          {% endfor %}
+        </SELECT>
+      </LABEL>
+    {% endif %}
+    </br>
+  {% endfor %}
+
+  {% for group in field.FormFields %}
+    {% include 'user-form-group.twig' with {'field':group} %}
+  {% endfor %}
+</DIV>

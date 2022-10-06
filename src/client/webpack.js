@@ -10,7 +10,7 @@ module.exports = {
   output: {
     filename: `main(${Version}).js`,
     path: __dirname + '/../../release/public/js/',
-    library: 'libpack',
+    library: 'FormLibrary',
     libraryTarget:'umd',
     umdNamedDefine: true
   },

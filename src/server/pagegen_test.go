@@ -25,3 +25,21 @@ func TestGenericGeneration(t *testing.T) {
     }
   }
 }
+
+// func TestCompositeTemplate(t *testing.T){
+//   env := templater.ReturnTemplateHandler()
+//   template_includes := templater.BuildIncludesFile([]string{
+//     "../../test/templates/test-views/include-a.twig" ,
+//     "../../test/templates/test-views/include-b.twig" ,
+//   } , map[string]stick.Value {
+//     "a": "Header",
+//     "b": "Footer",
+//   } )
+//   parsed_template, err := templater.ReturnFilledTemplate(env , "../../test/templates/test-views/ab-composite.twig" , map[string]stick.Value {
+//     "c": "Inside One",
+//     "d": "Inside the other",
+//   }  , template_includes)
+//
+//   t.Fatal(parsed_template , err)
+//
+// }

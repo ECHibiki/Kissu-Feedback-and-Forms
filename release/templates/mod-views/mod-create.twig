@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<HTML>
+  <HEAD>
+    {% include 'mod-header.twig' %}
+    <TITLE>Kissu Feedback & Forms - Create Form</TITLE>
+    <SCRIPT>
+      // use FormLibrary API to gen
+    </SCRIPT>
+  </HEAD>
+  <BODY>
+    <P>Page allows for admins to create forms without any knowledge of coding. Fill out the fields and the server will return errors if you made a mistake.
+      Some quirks with the software: new groups will always be bellow the responses. This can be a limitation for some organizational mindsets that creators may have.
+      <STRONG>The application forces a system of organization where everything is stored into groups. The intermingling of parent groups with child groups is limited</STRONG></P>
+    <FORM id="creator-form" onsubmit="return false">
+      <!--
+      type FormConstruct struct {
+      FormName string
+      ID string
+      Description string
+      // With anon option set to true there is an ability for users to flag themselves as anonymous
+      // Under other conditions there is no anonymity
+      AnonOption bool
+      FormFields []FormGroup
+    }
+  -->
+    <DIV id="required-fields">
+        <P>Required Fields:</P>
+        <LABEL>Form Name: <INPUT type="text" name="form-name"/> </LABEL> <br/>
+        <LABEL>Form ID: <INPUT type="text" name="id"/> <br/>
+        <LABEL>Form Descriptor:<INPUT type="text" name="description"/> <br/>
+        <LABEL>Allow Anonymous Submissions :<INPUT type="checkbox" name="anon-option"/> <br/>
+    </DIV>
+    <BUTTON id="root-respondable-create">Create New Respondable Below Last Respondable</BUTTON><br/>
+    <BUTTON id="root-group-create">Create New Group Below Last Respondable</BUTTON>
+<!-- type FormGroup struct {
+  Label string
+  ID string
+  Description string
+  SubGroup []FormGroup
+  Respondables []UnmarshalerFormObject
+} -->
+
+      <INPUT type="submit"/>
+    </FORM>
+    <HR/>
+    {% include 'footer.twig' %}
+  </BODY>
+</HTML>
