@@ -9,7 +9,6 @@ type ConfigurationSettings struct{
   DBAddr  string
   StartupPort string
   SiteName string
-  ResoruceDirectory string
 }
 
 type ConfigurationInitializerFields struct{
@@ -20,12 +19,11 @@ type ConfigurationInitializerFields struct{
   ApplicationPassword string
   StartupPort string
   SiteName string
-  ResoruceDirectory string
 }
 
 type FormDBFields struct{
-  ID int64
-  Name string
+  ID int64    // Primary
+  Name string // Unique
   FieldJSON string
   UpdatedAt int64
 }
@@ -41,7 +39,7 @@ type PasswordsDBFields struct{
   HashSystem string
   HashScrambler string
 }
-type LoginsDBFields struct{
+type LoginDBFields struct{
   TimeAt int64
   Cookie string
   IP string

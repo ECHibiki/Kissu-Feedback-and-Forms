@@ -9,22 +9,24 @@ import(
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/responder"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
+  prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
 )
 
 func TestInputStorage(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(demo_form_name , "a-simple-identifier" , db ,  initialization_folder)
 
-  var files map[string]former.MultipartFile = tools.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
+  var files map[string]former.MultipartFile = prebuilder.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
 
   // populate a response struct that would be filled out in a route
   //
@@ -95,7 +97,7 @@ func TestInputStorage(t *testing.T){
       t.Error(initialization_folder + "/data/" + demo_response.FormName + "/" + demo_response.ResponderID + "/files/ is missing")
   }
 
-  error_list := responder.WriteFilesFromMultipart(initialization_folder , demo_response)
+  error_list := tools.WriteFilesFromMultipart(initialization_folder , demo_response)
   if len(error_list) != 0 {
     t.Fatal(error_list)
   }
@@ -120,7 +122,7 @@ func TestInputStorage(t *testing.T){
   if err != nil{
     t.Fatal("responses.json error during parse")
   }
-  original_json_resp := responder.ConvertFormResponseToJSONFormResponse(initialization_folder , demo_response)
+  original_json_resp := tools.ConvertFormResponseToJSONFormResponse(initialization_folder , demo_response)
   testing_json_r,err := json.Marshal(json_resp)
   if err != nil{
     t.Fatal(err)
@@ -143,7 +145,7 @@ func TestInputStorage(t *testing.T){
     t.Fatal(err)
   }
 
-  resp , err := tools.GetResponseByID(db , 1)
+  resp , err := returner.GetResponseByID(db , 1)
   if err != nil {
     t.Fatal(err)
   }
@@ -159,18 +161,18 @@ func TestInputRejection(t * testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(demo_form_name , "a-simple-identifier" , db ,  initialization_folder)
 
 
   // The Value type should be that which FormFile produces
-  var files map[string]former.MultipartFile = tools.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "invalid-file.png", })
+  var files map[string]former.MultipartFile = prebuilder.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "invalid-file.png", })
 
   // populate a response struct that would be filled out in a route
   // Every item here should fail
@@ -267,14 +269,14 @@ func TestIllegalFName(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   demo_form_assumed_storage_name := "__Test_form_1"
   demo_form_name := "../Test form 1"
-  tools.DoFormInitialization(demo_form_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(demo_form_name , "a-simple-identifier" , db ,  initialization_folder)
 
 
   demo_response_fail := former.FormResponse{
@@ -318,5 +320,200 @@ func TestIllegalFName(t *testing.T){
 }
 
 func TestSamePersonReplyingTwice(t *testing.T){
-  t.Fatal("unimplemented" , "Should not fail, but upon realizing, update the existing data")
+  var initialization_folder string = "../../test"
+  var err error
+
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
+
+  first_name := "Test form 1"
+  first_store := "Test_form_1"
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db ,  initialization_folder)
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  prebuilder.ReplyToForm( 1 , first_store, "192.168.1.1", db , initialization_folder)
+  var files map[string]former.MultipartFile = prebuilder.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
+  new_response := former.FormResponse{
+      FormName: first_store,
+      RelationalID: 1,
+      ResponderID: "192.168.1.1",
+      Responses: map[string]string{
+        // Fill them out here
+        "anon-option":"false",
+        "Test-TA":"../some text\n\n\tasdf",
+        "Test-GI":"new text",
+        "Test-Chk-SG-1":"ck1", // in this case the check group has been assigned ...-1 from the algorithm
+        "Test-Chk-SG-3":"ck3", // in this case the check group has been assigned ...-3 from the algorithm
+        "Test-rdo-SG":"rd1", // In this case the radio group is just called
+        "Test-optGrp":"item-2",
+      },
+      // File paths are distinct in that their data effects file storage.
+      // While text based fields may be passed around and later inserted somewhere,
+      // Files must be moved around the OS
+      // This means giving them a unique identifier, in this case a JSON column
+      // It does not need a database column because after validation the files are written to a predictable location
+      FileObjects: files,
+    }
+
+    form, err := tools.GetFormOfID(db , new_response.RelationalID)
+    if err != nil {
+      t.Fatal(err)
+    }
+    var rebuild_group former.FormConstruct
+    err = json.Unmarshal([]byte(form.FieldJSON), &rebuild_group)
+    if err != nil{
+      t.Fatal( err )
+    }
+    // Validate responses
+    // Check files are valid
+    var text_issue_array []former.FailureObject = responder.ValidateTextResponsesAgainstForm(new_response.Responses , rebuild_group)
+    // Won't be tested here as yet
+    var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(new_response.FileObjects , rebuild_group)
+    issue_array := append(text_issue_array, file_issue_array...)
+    if len(issue_array) != 0{
+      t.Fatal("There should be no errors")
+    }
+
+    // Edit mode should scramble the IP to see if it exists elsewhere
+    edit_mode , old_id, err := responder.CheckIfEdit(db  , new_response )
+
+    if err != nil {
+      t.Fatal(err)
+    }
+    if edit_mode == false {
+      t.Fatal("Edit mode was not set")
+    }
+    if old_id != "192.168.1.1" {
+      t.Fatal("We're not testing that yet")
+    }
+
+    oldresp , err := returner.GetResponseByID(db , 1)
+    if err != nil {
+      t.Fatal(err)
+    }
+    old_resp_marshal , err := json.Marshal(oldresp)
+    if err != nil {
+      t.Fatal(err)
+    }
+
+    if edit_mode{
+      responder.DeleteResponderFolder( initialization_folder , new_response , old_id )
+      // Deleting is important because the responder ID could be set to scramble
+      // Also easier and since nothing relies on the data it can be done
+      responder.DeleteDatabaseResponse(db , new_response.RelationalID , old_id)
+    }
+
+    _ , err = os.Stat( initialization_folder + "/data/" + first_store + "/" + new_response.ResponderID)
+    if err == nil {
+      t.Fatal("Responder folder should be deleted")
+    }
+
+    responder.CreateResponderFolder( initialization_folder , new_response )
+    tools.WriteFilesFromMultipart(initialization_folder , new_response)
+    tools.WriteResponsesToJSONFile(initialization_folder , new_response)
+    new_response_db_fields , err := responder.FormResponseToDBFormat(new_response)
+    if err != nil {
+      t.Fatal(err)
+    }
+    // A combination of Responses and File Locations listing a URL for file download where it will be served
+    new_resp_marshal , err := json.Marshal(new_response_db_fields)
+    if err != nil {
+      t.Fatal(err)
+    }
+    if string(old_resp_marshal) == string(new_resp_marshal){
+      t.Fatal("The was no update")
+    }
+    err = tools.StoreResponseToDB(db , new_response_db_fields)
+    if err != nil {
+      t.Fatal(err)
+    }
+}
+
+func UpdateToAnonOption(t *testing.T){
+  var initialization_folder string = "../../test"
+  var err error
+
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
+
+  first_name := "Test form 1"
+  first_store := "Test_form_1"
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db ,  initialization_folder)
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  prebuilder.ReplyToFormScrambled( 1 , first_store, "192.168.1.1", db , initialization_folder)
+  var files map[string]former.MultipartFile = prebuilder.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
+  new_response := former.FormResponse{
+      FormName: first_store,
+      RelationalID: 1,
+      ResponderID: "192.168.1.1",
+      Responses: map[string]string{
+        // Fill them out here
+        "anon-option":"false",
+        "Test-TA":"../some text\n\n\tasdf",
+        "Test-GI":"new text",
+        "Test-Chk-SG-1":"ck1", // in this case the check group has been assigned ...-1 from the algorithm
+        "Test-Chk-SG-3":"ck3", // in this case the check group has been assigned ...-3 from the algorithm
+        "Test-rdo-SG":"rd1", // In this case the radio group is just called
+        "Test-optGrp":"item-2",
+      },
+      // File paths are distinct in that their data effects file storage.
+      // While text based fields may be passed around and later inserted somewhere,
+      // Files must be moved around the OS
+      // This means giving them a unique identifier, in this case a JSON column
+      // It does not need a database column because after validation the files are written to a predictable location
+      FileObjects: files,
+    }
+
+    form, err := tools.GetFormOfID(db , new_response.RelationalID)
+    if err != nil {
+      t.Fatal(err)
+    }
+    var rebuild_group former.FormConstruct
+    err = json.Unmarshal([]byte(form.FieldJSON), &rebuild_group)
+    if err != nil{
+      t.Fatal( err )
+    }
+    // Validate responses
+    // Check files are valid
+    var text_issue_array []former.FailureObject = responder.ValidateTextResponsesAgainstForm(new_response.Responses , rebuild_group)
+    // Won't be tested here as yet
+    var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(new_response.FileObjects , rebuild_group)
+    issue_array := append(text_issue_array, file_issue_array...)
+    if len(issue_array) != 0{
+      t.Fatal("There should be no errors")
+    }
+
+    // Edit mode should scramble the IP to see if it exists elsewhere
+    edit_mode , old_id, err := responder.CheckIfEdit(db  , new_response )
+
+    if err != nil {
+      t.Fatal(err)
+    }
+    if edit_mode == false {
+      t.Fatal("Edit mode was not set")
+    }
+    new_response.ScrambleResponderID()
+    assumed_old_id := new_response.ResponderID
+    new_response.ResponderID = "192.168.1.1"
+    if old_id != assumed_old_id {
+      t.Fatal("This should be scrambled")
+    }
+
+
+
+    if edit_mode{
+      responder.DeleteResponderFolder( initialization_folder , new_response , old_id  )
+      // Deleting is important because the responder ID could be set to scramble,
+      responder.DeleteDatabaseResponse(db , new_response.RelationalID, old_id)
+    }
+
+    _ , err = os.Stat( initialization_folder + "/data/" + first_store + "/" + assumed_old_id)
+    if err == nil {
+      t.Fatal("Responder folder should be deleted")
+    }
 }

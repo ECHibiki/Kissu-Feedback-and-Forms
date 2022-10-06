@@ -1,9 +1,10 @@
-package tools
+package testing
 
 import (
   "strings"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/builder"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/responder"
   "database/sql"
@@ -103,10 +104,12 @@ func CleanupTestingInitializations(initialization_folder string){
 func DoTestingIntializations(initialization_folder string) (*sql.DB , types.ConfigurationInitializerFields , types.ConfigurationSettings){
   err := os.Mkdir(initialization_folder + "/settings/", 0755)
   if err != nil {
+    CleanupTestingInitializations(initialization_folder)
     panic("Initialization of project settings folder failed")
   }
   err = os.Mkdir(initialization_folder + "/data/", 0755)
   if err != nil {
+    CleanupTestingInitializations(initialization_folder)
     panic("Initialization of project data folder failed")
   }
   init_fields := types.ConfigurationInitializerFields{
@@ -117,7 +120,6 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB , types.Conf
     ApplicationPassword: "test-password",
     StartupPort: ":4960",
     SiteName: "example.com",
-    ResoruceDirectory: initialization_folder,
   }
   cfg := types.ConfigurationSettings{
     DBName: init_fields.DBName,
@@ -126,7 +128,6 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB , types.Conf
     DBAddr: init_fields.DBAddr,
     StartupPort: init_fields.StartupPort,
     SiteName: init_fields.SiteName,
-    ResoruceDirectory: init_fields.ResoruceDirectory,
   }
 
   byte_json , err := json.Marshal(cfg)
@@ -138,12 +139,12 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB , types.Conf
     panic(err)
   }
 
-  db := QuickDBConnect(cfg)
-  BuildDBTables( db )
+  db := tools.QuickDBConnect(cfg)
+  tools.BuildDBTables( db )
   return db, init_fields , cfg
 }
 
-func DoFormInitialization(form_name string, form_id string, db *sql.DB, cfg types.ConfigurationSettings){
+func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir string){
   var base_demo_form former.FormConstruct = former.FormConstruct{
       FormName: form_name ,
       ID: form_id,
@@ -258,7 +259,7 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, cfg type
         },
       },
   }
-  issue_array := builder.ValidateForm(base_demo_form)
+  issue_array := builder.ValidateForm(db  ,base_demo_form)
   if len(issue_array) != 0 {
     fmt.Println(issue_array)
     panic("Issue array, issues detected")
@@ -268,11 +269,11 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, cfg type
   if err != nil{
     panic(err)
   }
-  err = StoreFormToDB(db, insertable_form)
+  err = tools.StoreFormToDB(db, insertable_form)
   if err != nil{
     panic(err)
   }
-  err = builder.CreateFormDirectory(base_demo_form , cfg)
+  err = builder.CreateFormDirectory(base_demo_form , root_dir)
   if err != nil{
     panic(err)
   }
@@ -320,7 +321,7 @@ func CopyTestFilesToMemory(root_dir string , image_names map[string]string ) ( m
 }
 
 func ReplyToForm(form_id int64 , target_storage_name string , user_id string ,  db *sql.DB, initialization_folder string) {
-  var files map[string]former.MultipartFile = tools.CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
+  var files map[string]former.MultipartFile = CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
 
   // populate a response struct that would be filled out in a route
   //
@@ -347,9 +348,45 @@ func ReplyToForm(form_id int64 , target_storage_name string , user_id string ,  
   }
 
   responder.CreateResponderFolder( initialization_folder , demo_response )
-  responder.WriteFilesFromMultipart(initialization_folder , demo_response)
-  responder.WriteResponsesToJSONFile(initialization_folder , demo_response)
-  demo_response_db_fields , err := responder.FormResponseToDBFormat(demo_response)
+  tools.WriteFilesFromMultipart(initialization_folder , demo_response)
+  tools.WriteResponsesToJSONFile(initialization_folder , demo_response)
+  demo_response_db_fields , _ := responder.FormResponseToDBFormat(demo_response)
   // A combination of Responses and File Locations listing a URL for file download where it will be served
-  err = tools.StoreResponseToDB(db , demo_response_db_fields)
+  tools.StoreResponseToDB(db , demo_response_db_fields)
+}
+
+func ReplyToFormScrambled(form_id int64 , target_storage_name string , user_id string ,  db *sql.DB, initialization_folder string) {
+  var files map[string]former.MultipartFile = CopyTestFilesToMemory(initialization_folder , map[string]string{"Test-FI": "test-file-1.jpg",})
+
+  // populate a response struct that would be filled out in a route
+  //
+  demo_response := former.FormResponse{
+    FormName: target_storage_name,
+    RelationalID: form_id,
+    ResponderID: user_id,
+    Responses: map[string]string{
+      // Fill them out here
+      "anon-option":"true",
+      "Test-TA":"../some text\n\n\tasdf",
+      "Test-GI":"../some text",
+      "Test-Chk-SG-1":"ck1", // in this case the check group has been assigned ...-1 from the algorithm
+      "Test-Chk-SG-3":"ck3", // in this case the check group has been assigned ...-3 from the algorithm
+      "Test-rdo-SG":"rd1", // In this case the radio group is just called
+      "Test-optGrp":"item-2",
+    },
+    // File paths are distinct in that their data effects file storage.
+    // While text based fields may be passed around and later inserted somewhere,
+    // Files must be moved around the OS
+    // This means giving them a unique identifier, in this case a JSON column
+    // It does not need a database column because after validation the files are written to a predictable location
+    FileObjects: files,
+  }
+
+
+  responder.CreateResponderFolder( initialization_folder , demo_response )
+  tools.WriteFilesFromMultipart(initialization_folder , demo_response)
+  tools.WriteResponsesToJSONFile(initialization_folder , demo_response)
+  demo_response_db_fields , _ := responder.FormResponseToDBFormat(demo_response)
+  // A combination of Responses and File Locations listing a URL for file download where it will be served
+  tools.StoreResponseToDB(db , demo_response_db_fields)
 }

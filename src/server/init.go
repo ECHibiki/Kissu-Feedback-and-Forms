@@ -80,10 +80,6 @@ func checkConfigured(root_dir string) bool{
     fmt.Println(cfg)
     panic("Error reading Config.json. SiteName must be set")
   }
-  if cfg.ResoruceDirectory == "" {
-    fmt.Println(cfg)
-    panic("Error reading Config.json. ResoruceDirectory must have a value")
-  }
   return true
 }
 
@@ -109,9 +105,6 @@ func createConfigurationFile(root_dir string, init_fields types.ConfigurationIni
   if init_fields.SiteName == "" {
     panic("SiteName must be set")
   }
-  if init_fields.ResoruceDirectory == "" {
-    init_fields.ResoruceDirectory = "./"
-  }
 
   cfg := types.ConfigurationSettings{
     DBName: init_fields.DBName,
@@ -120,7 +113,6 @@ func createConfigurationFile(root_dir string, init_fields types.ConfigurationIni
     DBAddr: init_fields.DBAddr,
     StartupPort: init_fields.StartupPort,
     SiteName: init_fields.SiteName,
-    ResoruceDirectory: init_fields.ResoruceDirectory,
   }
 
   byte_json , err := json.Marshal(cfg)
@@ -141,7 +133,6 @@ func createDB( init_fields types.ConfigurationInitializerFields ){
     DBAddr: init_fields.DBAddr,
     StartupPort: init_fields.StartupPort,
     SiteName: init_fields.SiteName,
-    ResoruceDirectory: init_fields.ResoruceDirectory,
   }
   db := tools.QuickDBConnect(cfg)
   tools.BuildDBTables( db )

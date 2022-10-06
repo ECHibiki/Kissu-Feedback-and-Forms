@@ -2,12 +2,14 @@ package main
 
 import (
     "testing"
+    "time"
     "os"
     "encoding/json"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/builder"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
+    prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
 )
 
 func TestConversionBetweenTypesAndInput(t *testing.T){
@@ -52,8 +54,8 @@ func TestFormMake(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
@@ -161,7 +163,7 @@ func TestFormMake(t *testing.T){
       },
   }
 
-  issue_array := builder.ValidateForm(demo_form)
+  issue_array := builder.ValidateForm(db  ,demo_form)
   if len(issue_array) != 0 {
     t.Fatal(issue_array)
   }
@@ -196,8 +198,8 @@ func TestFormMake(t *testing.T){
   if err == nil{
     t.Fatal("Form was inserted twice, with same name, and passed without error")
   }
-  should_not_exist_form , err = tools.GetFormOfID(db, 2)
-  if should_not_exist_form != nil && db_form.ID != 0{
+  should_not_exist_form , err := tools.GetFormOfID(db, 2)
+  if err == nil || should_not_exist_form.ID != 0{
     t.Fatal("Yet still, a form that should not exists does")
   }
 
@@ -222,10 +224,7 @@ func TestFormMake(t *testing.T){
     t.Fatal("unmarshalling process did not preserve data\n\n" , string(marshaled_form_for_verify) , "\n\n" , string(marshaled_form_for_tests));
   }
 
-
-
-
-  err = builder.CreateFormDirectory(demo_form , cfg)
+  err = builder.CreateFormDirectory(demo_form , initialization_folder)
   if err != nil{
     t.Fatal(err)
   }
@@ -238,14 +237,14 @@ func TestFormMake(t *testing.T){
 
 func TestNonUniqueFormNameProducesErrorInValidationStep(t *testing.T){
   var initialization_folder string = "../../test"
-  var err error
+  // var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
-  demo_form_assumed_storage_name := "__Test_form_1"
-  demo_form_name := "../Test form 1"
-  testing.DoFormInitialization(demo_form_name, "character-safe-form1", db , cfg )
+  // demo_form_assumed_storage_name := "Test_form_1"
+  demo_form_name := "Test form 1"
+  prebuilder.DoFormInitialization(demo_form_name, "character-safe-form1", db , initialization_folder )
 
   // Insert a similar valid form which fails due to identical name
   var demo_form former.FormConstruct = former.FormConstruct{
@@ -350,15 +349,15 @@ func TestNonUniqueFormNameProducesErrorInValidationStep(t *testing.T){
       },
   }
 
-  issue_array := builder.ValidateForm(demo_form)
+  issue_array := builder.ValidateForm(db  , demo_form)
   if len(issue_array) == 0 {
     t.Fatal("The issue array is empty" , issue_array)
   }
-  if issue_array[0].Message != former.DuplicateFormNameMessage {
-    t.Fatal("Improper error message for duplicate form name" , issue_array[0].Message)
+  if issue_array[0].FailType != former.DuplicateFormNameMessage {
+    t.Fatal("Improper error message for duplicate form name" , issue_array[0].FailType)
   }
-  if issue_array[0].Message != former.DuplicateFormNameCode{
-    t.Fatal("Improper error code for duplicate form name" , issue_array[0].Code)
+  if issue_array[0].FailCode != former.DuplicateFormNameCode{
+    t.Fatal("Improper error code for duplicate form name" , issue_array[0].FailCode)
   }
 
 }
@@ -366,6 +365,10 @@ func TestNonUniqueFormNameProducesErrorInValidationStep(t *testing.T){
 
 func TestInvalidStructureForms(t *testing.T){
   var err error
+
+  var initialization_folder string = "../../test"
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
@@ -377,7 +380,8 @@ func TestInvalidStructureForms(t *testing.T){
       FormFields:[]former.FormGroup{   },
   }
 
-  failure_object := builder.ValidateForm(failing_demo_form)
+
+  failure_object := builder.ValidateForm(db  ,failing_demo_form)
   if len(failure_object) != 1 {
     t.Fatal("The number of errors is incorrect" , failure_object)
   }
@@ -462,7 +466,7 @@ func TestInvalidStructureForms(t *testing.T){
     },
   }
 
-  failure_object = builder.ValidateForm(an_alternative_failing_demo_form)
+  failure_object = builder.ValidateForm(db  ,an_alternative_failing_demo_form)
   if len(failure_object) != 2 {
     t.Error("The number of errors is incorrect" , failure_object)
   } else{
@@ -496,7 +500,9 @@ func TestDuplicateIDNameFailure(t *testing.T){
   // TESTS HEAD ID SAME AS SUBGROUP ID
   // TESTS SUBGROUP ID SAME AS SUBGROUP ID
   // TESTS FIELD NAME SAME AS FIELD NAME
-
+  var initialization_folder string = "../../test"
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   var failing_duplicates_headtosub_form former.FormConstruct = former.FormConstruct{
@@ -514,7 +520,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
     },
   }
 
-  failure_object := builder.ValidateForm(failing_duplicates_headtosub_form)
+  failure_object := builder.ValidateForm(db  ,failing_duplicates_headtosub_form)
   if len(failure_object) != 1 {
     t.Error("A form with an  duplicate ID is throwing incorrect number of errors" , failure_object)
   } else{
@@ -589,7 +595,8 @@ func TestDuplicateIDNameFailure(t *testing.T){
   }
 
   // Follows outer leafs of search tree
-  failure_object = builder.ValidateForm(failing_duplicates_subtosub_form)
+
+  failure_object = builder.ValidateForm(db  ,failing_duplicates_subtosub_form)
   if len(failure_object) != 3 {
     t.Error("The number of errors is incorrect" , failure_object)
   } else{
@@ -668,7 +675,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
     },
   }
 
-  failure_object = builder.ValidateForm(failing_duplicates_fieldtofield_form)
+  failure_object = builder.ValidateForm(db  ,failing_duplicates_fieldtofield_form)
   if len(failure_object) != 1 {
     t.Error("A respondable with duplicate Name is throwing incorrect error numbers" , failure_object)
   } else{
@@ -689,7 +696,9 @@ func TestInvalidCharIDNameFailure(t *testing.T){
 
   // TESTS Construct and Group ID USES INVALID CHARACTESR FOR HTML ID
   // TESTS FIELD USES NAME WITH INVALID CHARACTESR FOR Name
-
+  var initialization_folder string = "../../test"
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
   // Another Gin function builds the struct so that these functions can read it
   // function won't be tested because I don't want to mock HTTP requests at this time
   var failing_bad_char_form former.FormConstruct = former.FormConstruct{
@@ -764,7 +773,8 @@ func TestInvalidCharIDNameFailure(t *testing.T){
       },
     },
   }
-  failure_object := builder.ValidateForm(failing_bad_char_form)
+  // Follows outer leafs of search tree
+  failure_object := builder.ValidateForm(db , failing_bad_char_form)
   if len(failure_object) != 9 {
     t.Error("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
   } else{
@@ -867,6 +877,10 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
     input name == cx 3
     doesn't matter if there is no checkgroup cx-3, if there's an input called cx then it shouldn't have an ending number
   */
+  var initialization_folder string = "../../test"
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
+
   var failing_chk_form former.FormConstruct = former.FormConstruct{
     AnonOption: false,
     FormName: "checkgroup fail",
@@ -944,7 +958,8 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
    2) Create the 'hypen number' fail condition from checkbox selectgroup against the text fields
 */
 
-  failure_object := builder.ValidateForm(failing_chk_form)
+// Follows outer leafs of search tree
+  failure_object := builder.ValidateForm(db  ,failing_chk_form)
 
   if len(failure_object) != 1 {
     t.Fatal("The number of errors is incorrect for inccorect character checks\n" , failure_object , len(failure_object))
@@ -966,23 +981,26 @@ func TestEditOfForm(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   first_name := "Test form 1"
-  first_store := "Test_form_1"
-  tools.DoFormInitialization(first_name , "a-simple-identifier" , db , cfg)
+  // first_store := "Test_form_1"
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db , initialization_folder)
   if err != nil {
     t.Fatal(err)
   }
+
+  time.Sleep(1 * time.Second)
 
   // Moslty copying the test from TestFormMake(t) but with more relevant methods
   // Doesn't build folders since they already exist
   // DB is updated instead of created and new fields should be considered as their nil value
   // The form name itself can not be changed, for obvious reasons
+  form_storage_name := "Test form 1"
   var replacement_form former.FormConstruct = former.FormConstruct{
-      FormName: replacement_form_name ,
-      ID: "id-changed",
+      FormName: form_storage_name ,
+      ID: "abc",
       Description: "A now changed form",
       AnonOption: true,
       FormFields:[]former.FormGroup{
@@ -1032,12 +1050,15 @@ func TestEditOfForm(t *testing.T){
       },
   }
 
-  issue_array := builder.ValidateForm(replacement_form)
-  if len(issue_array) != 0 {
-    t.Fatal(issue_array)
+  base_form_db , err := tools.GetFormOfID(db , 1)
+  if err != nil{
+    t.Fatal(err)
   }
+  var base_form former.FormConstruct
+  err = json.Unmarshal([]byte(base_form_db.FieldJSON) , &base_form)
+
   // Verify the name is unchanged or any other important fields are not altered
-  issue_array = builder.ValidateFormEdit(replacement_form)
+  issue_array := builder.ValidateFormEdit(replacement_form , base_form)
   if len(issue_array) != 0 {
     t.Fatal(issue_array)
   }
@@ -1067,16 +1088,26 @@ func TestEditOfForm(t *testing.T){
   }
 
   var returned_form types.FormDBFields
-  var rebuild_group former.FormConstruct
   returned_form , err = tools.GetFormOfID(db, 1)
-  if returned_form.FieldJSON != string(marshaled_form_for_tests){
-    t.Fatal("Fields returns from DB are not same as marshaled");
+
+  if returned_form.UpdatedAt == base_form_db.UpdatedAt{
+    t.Error("UpdatedAt did not change" , returned_form.UpdatedAt , base_form_db.UpdatedAt)
   }
-  marshaled_form_for_verify , err := json.Marshal(rebuild_group)
-  if err != nil{
+  if returned_form.FieldJSON == base_form_db.FieldJSON{
+    t.Error("FieldJSON form is unchanged")
+  }
+
+  var replace_form former.FormConstruct
+  err = json.Unmarshal([]byte(returned_form.FieldJSON) , &replace_form)
+  if err != nil {
     t.Fatal(err)
   }
-  if string(marshaled_form_for_verify) != string(marshaled_form_for_tests) {
-    t.Fatal("unmarshalling process did not preserve data\n\n" , string(marshaled_form_for_verify) , "\n\n" , string(marshaled_form_for_tests));
+  marshaled_replace_form , err := json.Marshal(replace_form)
+  if err != nil {
+    t.Fatal(err)
   }
+  if string(marshaled_replace_form) !=  returned_form.FieldJSON{
+    t.Fatal("Marshaling process removed data")
+  }
+
 }

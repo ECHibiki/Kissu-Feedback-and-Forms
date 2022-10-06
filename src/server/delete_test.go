@@ -2,50 +2,60 @@ package main
 
 import(
   "testing"
+  "os"
+  prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/destroyer"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 )
 
 func TestDeleteOfForm(t *testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   first_name := "Test form 1"
   first_store := "Test_form_1"
-  tools.DoFormInitialization(first_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db ,  initialization_folder)
   if err != nil {
     t.Fatal(err)
   }
   second_name := "Test form 2"
   second_store := "Test_form_2"
-  tools.DoFormInitialization(first_store , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(second_name , "a-simple-identifier" , db ,  initialization_folder)
   if err != nil {
     t.Fatal(err)
   }
-  testing.ReplyToForm(db , 1 , second_store, "192.168.1.3", db , initialization_folder)
-  testing.ReplyToForm(db , 2 , first_store , "192.168.1.1" , db , initialization_folder)
-  testing.ReplyToForm(db , 2 , first_store, "192.168.1.2", db , initialization_folder)
+  prebuilder.ReplyToForm( 1 , second_store, "192.168.1.3", db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , first_store , "192.168.1.1" , db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , first_store, "192.168.1.2", db , initialization_folder)
 
-  destroyer.DeleteForm(db , initialization_folder , 2)
+  destroyer.DeleteForm(db  , first_store)
 
-  _ , err := tools.GetFormOfID(db , 2)
-  if err != nil {
-      t.Fatal("deleted form still exists")
-  }
-  _, err := os.Stat(initialization_folder + "/data/" + second_store)
-  if err != nil {
-    t.Fatal("Form deletes should retain old files in case of mistakes")
-  }
-
-
-  _ , err := tools.GetFormOfID(db , 1)
+  r , err := returner.GetResponseByID(db , 3)
   if err == nil {
-    t.Fatal("Error on form that should still exist")
+    t.Fatal("A response to a delte form lingers" , r)
+  }
+
+  f , err := tools.GetFormOfID(db , 2)
+  if err == nil {
+      t.Fatal("deleted form still exists" , f)
+  }
+  _, err = os.Stat(initialization_folder + "/data/" + second_store)
+  if err != nil {
+    t.Fatal("Form deletes should retain old files in case of mistakes " , second_store , " missing")
+  }
+
+
+  f , err = tools.GetFormOfID(db , 1)
+  if err != nil {
+    t.Fatal("Error on form that should still exist" , r)
   }
   _, err = os.Stat(initialization_folder + "/data/" + first_store)
   if err != nil {
-    t.Fatal("An unrelated form directory was removed")
+    t.Fatal("An unrelated form directory was removed" , first_store)
   }
 }
 
@@ -53,63 +63,67 @@ func TestDeleteOfResponse(t * testing.T){
   var initialization_folder string = "../../test"
   var err error
 
-  db, _ , cfg := tools.DoTestingIntializations(initialization_folder)
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
   first_name := "Test form 1"
   first_store := "Test_form_1"
-  tools.DoFormInitialization(first_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db ,  initialization_folder)
   if err != nil {
     t.Fatal(err)
   }
   second_name := "Test form 2"
   second_store := "Test_form_2"
-  tools.DoFormInitialization(second_name , "a-simple-identifier" , db , cfg)
+  prebuilder.DoFormInitialization(second_name , "a-simple-identifier" , db ,  initialization_folder)
   if err != nil {
     t.Fatal(err)
   }
-  testing.ReplyToForm(db , 1 , second_store, "192.168.1.3", db , initialization_folder)
-  testing.ReplyToForm(db , 2 , first_store , "192.168.1.1" , db , initialization_folder)
-  testing.ReplyToForm(db , 2 , first_store, "192.168.1.2", db , initialization_folder)
+  prebuilder.ReplyToForm( 1 , first_store, "192.168.1.1", db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , second_store , "192.168.1.2" , db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , second_store, "192.168.1.3", db , initialization_folder)
 
-  destroyer.DeleteResponse(db , initialization_folder , 2)
+  destroyer.DeleteResponse(db , initialization_folder , 2 , second_store , "192.168.1.2")
 
-  for i := 1 ; i < 3 ; i++ {
-    _ , err := tools.GetFormOfID(db , i)
-    if err != nil {
-      t.Fatal("Error on form that should still exist")
-    }
-    _, err = os.Stat(initialization_folder + "/data/" + first_store)
-    if err != nil {
-      t.Fatal("An unrelated form directory was removed")
-    }
-
+  _ , err = tools.GetFormOfID(db , int64(1))
+  if err != nil {
+    t.Error("Error on form that should still exist")
+  }
+  _, err = os.Stat(initialization_folder + "/data/" + first_store)
+  if err != nil {
+    t.Error("An unrelated form directory was removed")
+  }
+  _ , err = tools.GetFormOfID(db , int64(2))
+  if err != nil {
+    t.Error("Error on form that should still exist")
+  }
+  _, err = os.Stat(initialization_folder + "/data/" + second_store)
+  if err != nil {
+    t.Error("An unrelated form directory was removed")
   }
 
-  _ , err := tools.GetResponseByID(db , 1)
-  if err == nil {
-    t.Fatal("Error on response that should still exist")
+  _ , err = returner.GetResponseByID(db , 1)
+  if err != nil {
+    t.Error("Error on response that should still exist")
   }
   _, err = os.Stat(initialization_folder + "/data/" + first_store + "/192.168.1.1/")
   if err != nil {
-    t.Fatal("An unrelated Response directory was removed")
+    t.Error("An unrelated Response directory was removed")
   }
-  _ , err := tools.GetResponseByID(db , 3)
+  _ , err = returner.GetResponseByID(db , 2)
   if err == nil {
-    t.Fatal("Error on response that should still exist")
+    t.Error("Error on response that should not exist")
   }
-  _, err = os.Stat(initialization_folder + "/data/" + first_store + "/192.168.1.3/")
-  if err != nil {
-    t.Fatal("An unrelated Response directory was removed")
-  }
-
-  _ , err := tools.GetResponseByID(db , 2)
-  if err != nil {
-    t.Fatal("Response that should not exist does not return SQL err")
-  }
-  _, err = os.Stat(initialization_folder + "/data/" + first_store + "/192.168.1.2/")
+  _, err = os.Stat(initialization_folder + "/data/" + second_store + "/192.168.1.2/")
   if err == nil {
-    t.Fatal("Response that should not exist does not return OS err")
+    t.Error("A Response directory was not removed")
+  }
+  _ , err = returner.GetResponseByID(db , 3)
+  if err != nil {
+    t.Error("Error on response that should still exist")
+  }
+  _, err = os.Stat(initialization_folder + "/data/" + second_store + "/192.168.1.3/")
+  if err != nil {
+    t.Error("An unrelated Response directory was removed")
   }
 
 }

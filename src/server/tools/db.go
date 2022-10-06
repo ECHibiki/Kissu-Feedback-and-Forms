@@ -12,7 +12,7 @@ func BuildDBTables( db *sql.DB ){
   if err != nil{
     panic(err)
   }
-  _, err = db.Exec("CREATE TABLE responses(id INT AUTO_INCREMENT PRIMARY KEY , fk_id INT, identifier VARCHAR(60) , response_json TEXT , submitted_at INT  , FOREIGN KEY (fk_id) REFERENCES forms(id) )")
+  _, err = db.Exec("CREATE TABLE responses(id INT AUTO_INCREMENT PRIMARY KEY , fk_id INT, identifier VARCHAR(60) , response_json TEXT , submitted_at INT  , FOREIGN KEY (fk_id) REFERENCES forms(id)  ON DELETE CASCADE )")
   if err != nil{
     panic(err)
   }

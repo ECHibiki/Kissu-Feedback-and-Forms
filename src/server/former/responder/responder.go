@@ -3,18 +3,16 @@ package responder
 import (
   "fmt"
   "os"
-  "io"
-  "io/ioutil"
   "strings"
   "errors"
   "time"
   "strconv"
   "regexp"
   "encoding/json"
-  "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
+  "database/sql"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
-
+  "github.com/gin-gonic/gin"
 )
 // c.Request.FromFile
 // http.DetectContentType
@@ -298,4 +296,82 @@ func FormResponseToDBFormat(response former.FormResponse) (types.ResponseDBField
     ResponseJSON: string(resp_bytes),
     SubmittedAt: time.Now().Unix(),
   } , err
+}
+
+func CheckIfEdit(db *sql.DB , new_response former.FormResponse) (bool , string, error){
+  scrambled_id := new_response.GetScrambledID()
+  r := db.QueryRow("SELECT identifier FROM responses WHERE fk_id = ? AND (identifier = ? OR identifier = ?)" , new_response.RelationalID , new_response.ResponderID , scrambled_id)
+  var id string
+  err := r.Scan(&id)
+  if err != nil{
+    return false, "" , err
+  } else{
+    return true , id, nil
+  }
+}
+
+func FillMapWithPostParams(c *gin.Context , resp_map *map[string]string , form former.FormConstruct){
+  if len(form.FormFields) == 0 {
+    return
+  }
+  var stack_map map[string]string = make(map[string]string)
+  var subgroup_stack []former.FormGroup
+  subgroup_stack = append(subgroup_stack , form.FormFields...)
+  // fail location identified by an ID
+  for len(subgroup_stack) > 0  {
+    item := subgroup_stack[len(subgroup_stack) - 1]
+    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
+    if len(item.Respondables) != 0 {
+      for _ , r := range item.Respondables {
+        if r.Type == former.FileInputTag {
+          continue
+        }
+        stack_map[r.Object.GetName()] = c.Param(r.Object.GetName())
+      }
+    }
+    if len(item.SubGroup) != 0 {
+      // add children to the stack
+      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+    }
+  }
+  resp_map = &stack_map
+}
+func FillMapWithPostFiles(c *gin.Context , file_map *map[string]former.MultipartFile , form former.FormConstruct){
+  if len(form.FormFields) == 0 {
+    return
+  }
+  var stack_map map[string]former.MultipartFile = make(map[string]former.MultipartFile)
+  var subgroup_stack []former.FormGroup
+  subgroup_stack = append(subgroup_stack , form.FormFields...)
+  // fail location identified by an ID
+  for len(subgroup_stack) > 0  {
+    item := subgroup_stack[len(subgroup_stack) - 1]
+    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
+    if len(item.Respondables) != 0 {
+      for _ , r := range item.Respondables {
+        if r.Type == former.FileInputTag {
+          image , header , _ := c.Request.FormFile(r.Object.GetName())
+          mp := former.MultipartFile{
+            File: image,
+            Header: header,
+          }
+          stack_map[r.Object.GetName()] = mp
+        }
+      }
+    }
+    if len(item.SubGroup) != 0 {
+      // add children to the stack
+      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+    }
+  }
+  file_map = &stack_map
+}
+
+func DeleteResponderFolder(root_dir string,  new_response former.FormResponse , old_user_name string) error{
+  return os.RemoveAll(root_dir + "/data/" + new_response.FormName + "/" + old_user_name)
+}
+
+func DeleteDatabaseResponse(db *sql.DB , relational_id int64 , old_user_name string) error{
+    _ , err := db.Exec("DELETE FROM responses WHERE fk_id= ? AND identifier = ? LIMIT 1" , relational_id , old_user_name)
+    return err
 }

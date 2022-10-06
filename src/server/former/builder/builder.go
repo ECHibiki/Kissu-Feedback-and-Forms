@@ -2,6 +2,7 @@ package builder
 
 import (
   "encoding/json"
+  "database/sql"
   "time"
   "os"
   "fmt"
@@ -9,6 +10,7 @@ import (
   "regexp"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 )
 
 
@@ -29,18 +31,33 @@ func MakeFormWritable(form former.FormConstruct) (types.FormDBFields  , error){
   } , nil
 }
 
-func CreateFormDirectory(form former.FormConstruct , cfg types.ConfigurationSettings) error{
+func CreateFormDirectory(form former.FormConstruct , root_dir string) error{
   safe_name := form.StorageName()
-  err := os.Mkdir(cfg.ResoruceDirectory + "/data/" + safe_name + "/" , 0775 )
-  fmt.Println("Writting new form to " , cfg.ResoruceDirectory + "/data/" + safe_name + "/")
+  err := os.Mkdir(root_dir + "/data/" + safe_name + "/" , 0775 )
+  fmt.Println("Writting new form to " , root_dir + "/data/" + safe_name + "/")
   if err != nil {
     return err
   }
   return nil
 }
 
+func checkNameUnique(db *sql.DB ,  form former.FormConstruct ) (error_list former.FailureObject){
+  row  := db.QueryRow("SELECT * FROM forms WHERE name = ?" , form.StorageName())
+  var db_field types.FormDBFields
+  err := row.Scan(&db_field.ID , &db_field.Name , &db_field.FieldJSON , &db_field.UpdatedAt)
+  if err == nil {
+    return former.FailureObject{ former.DuplicateFormNameMessage , former.DuplicateFormNameCode , "FormName"  }
+  }
+  return former.FailureObject{}
+}
 
-func ValidateForm(form former.FormConstruct) (error_list []former.FailureObject) {
+func ValidateForm(db *sql.DB , form former.FormConstruct) (error_list []former.FailureObject) {
+
+  dupe_err := checkNameUnique(db , form)
+  if dupe_err.FailType != "" {
+    error_list = append(error_list , dupe_err)
+  }
+
   uniqueness_errors := checkNameAndIDUniqueness(form)
   if len(uniqueness_errors) > 0 {
     error_list = append(error_list , uniqueness_errors...)
@@ -194,4 +211,43 @@ func checkNameAndIDPropperCharacters(form former.FormConstruct) (error_list []fo
     }
   }
   return error_list
+}
+
+func ValidateFormEdit(replace former.FormConstruct , base former.FormConstruct) (error_list []former.FailureObject){
+  if replace.FormName != base.FormName {
+      error_list = append(error_list , former.FailureObject{former.EditNameChangeMessage, former.EditNameChangeCode , "FormName"})
+  }
+
+  // base is valid of course
+
+  uniqueness_errors := checkNameAndIDUniqueness(replace)
+  if len(uniqueness_errors) > 0 {
+    error_list = append(error_list , uniqueness_errors...)
+  }
+
+  character_errors := checkNameAndIDPropperCharacters(replace)
+  if len(character_errors) > 0 {
+    error_list = append(error_list , character_errors...)
+  }
+
+  // uniqueness errors through all other chekcs into confusion
+  // allowing for other errors to display isn't important... not even golang shows all error types at once
+  // this limitation, I guess, issue will apply to situations where a submits without the client
+  if len(uniqueness_errors) > 0 {
+    return error_list
+  }
+
+  struct_errors := checkValidFormStructure(replace)
+  if len(struct_errors) > 0 {
+    error_list = append(error_list , struct_errors...)
+  }
+  return
+}
+
+func StoreForm(db *sql.DB , db_form types.FormDBFields ) error{
+  return tools.StoreFormToDB(db , db_form)
+}
+func UpdateForm( db *sql.DB , index int64 , db_form types.FormDBFields ) error {
+  _, err := db.Exec("UPDATE forms SET field_json = ? , updated_at = ? WHERE id = ?" , db_form.FieldJSON, db_form.UpdatedAt, index)
+  return err
 }

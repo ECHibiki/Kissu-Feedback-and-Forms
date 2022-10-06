@@ -2,6 +2,19 @@ package tools
 
 import (
   "os"
+  "fmt"
+  "errors"
+  "encoding/json"
+  "encoding/csv"
+  "io/ioutil"
+  "io"
+  "strings"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
+  "archive/tar"
+	"bytes"
+	"bufio"
+	"compress/gzip"
+	"path/filepath"
 )
 
 func LogError(storage_dir string, message string){
@@ -50,23 +63,112 @@ func WriteFilesFromMultipart(root_dir string , response_struct former.FormRespon
   for field_name , file_object := range response_struct.FileObjects {
     fname := field_name + "-" + file_object.Header.Filename
     if strings.Contains(fname , "/"){
-      tools.LogError( storage_dir , storage_dir +  fname )
+      LogError( storage_dir , storage_dir +  fname )
       err_list = append(err_list , errors.New("File " + fname +  " contained illegal characters"))
       continue
     }
     handler, err := os.OpenFile(storage_dir +  fname , os.O_WRONLY|os.O_CREATE, 0644)
     if err != nil {
-      tools.LogError( storage_dir , storage_dir +  fname )
+      LogError( storage_dir , storage_dir +  fname )
       err_list = append(err_list , err)
       continue
     }
     defer handler.Close()
     _ , err = io.Copy(handler , file_object.File )
      if err != nil {
-       tools.LogError( storage_dir , storage_dir +  fname )
+       LogError( storage_dir , storage_dir +  fname )
        err_list = append(err_list , err)
        continue
      }
   }
   return err_list
+}
+
+// borrowing from https://gist.github.com/mimoo/25fc9716e0f1353791f5908f94d6e726
+func CreateDownloadableForGivenForm(initialization_folder string , form_name string) error{
+  form_dir := initialization_folder + "/data/" + form_name
+  file_path := initialization_folder + "/data/" + form_name + "/downloadable.tar.gz"
+
+  err  := os.Remove(file_path)
+  if err != nil {
+    return err
+  }
+
+  var buf bytes.Buffer
+  zr := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(zr)
+
+	// walk through every file in the folder
+	filepath.Walk(form_dir, func(file string, fi os.FileInfo, err error) error {
+  		// generate tar header
+  		header, err := tar.FileInfoHeader(fi, file)
+  		if err != nil {
+  			return err
+  		}
+
+  		// must provide real name
+  		// (see https://golang.org/src/archive/tar/common.go?#L626)
+  		header.Name = filepath.ToSlash(file)
+
+  		// write header
+  		if err := tw.WriteHeader(header); err != nil {
+  			return err
+  		}
+  		// if not a dir, write file content
+  		if !fi.IsDir() {
+  			data, err := os.Open(file)
+  			if err != nil {
+  				return err
+  			}
+  			if _, err := io.Copy(tw, data); err != nil {
+  				return err
+  			}
+  		}
+  		return nil
+	})
+
+	// produce tar
+	if err := tw.Close(); err != nil {
+		return err
+	}
+	// produce gzip
+	if err := zr.Close(); err != nil {
+		return err
+	}
+
+  compressed_file, err := os.OpenFile(initialization_folder+ "/data/" + form_name + "/downloadable.tar.gz", os.O_CREATE|os.O_RDWR, os.FileMode(644))
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(compressed_file, &buf); err != nil {
+		return err
+	}
+  return nil
+}
+
+
+func WriteJSONReadmeToDir(filename string, field_map map[string]string) error{
+  nice_marshal , err := json.MarshalIndent(field_map, "" , " ")
+  if err != nil {
+    return err
+  }
+  return ioutil.WriteFile(filename , nice_marshal , 0644)
+}
+
+func WriteCSVToDir(filename string, csv_data [][]string) error{
+  f , err := os.OpenFile(filename ,  os.O_RDWR|os.O_CREATE,0644)
+  if err != nil {
+    return err
+  }
+  writer := csv.NewWriter(f)
+  return writer.WriteAll(csv_data)
+}
+
+func ReadLine(item string) string{
+  fmt.Print("  (" + item + ") --> ")
+  reader := bufio.NewReader(os.Stdin)
+  text, _ := reader.ReadString('\n')
+  // convert CRLF to LF
+  text = strings.Replace(text, "\n", "", -1)
+  return text
 }

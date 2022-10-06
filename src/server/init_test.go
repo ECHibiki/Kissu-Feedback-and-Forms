@@ -3,8 +3,7 @@ package main
 import (
 	"testing"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
-  "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
-
+	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
   "os"
 )
 
@@ -12,7 +11,7 @@ import (
 func TestInitialization(t *testing.T) {
   var initialization_folder string = "../../test"
 
-  defer tools.CleanupTestingInitializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
 
 // Check for basic folders
   is_init := checkIntialized(initialization_folder)
@@ -50,7 +49,6 @@ func TestInitialization(t *testing.T) {
     ApplicationPassword: "test-password",
     StartupPort: ":4960",
     SiteName: "example.com",
-    ResoruceDirectory: initialization_folder,
   }
   //to create files and data
   createConfigurationFile(initialization_folder , init_fields)
@@ -78,7 +76,6 @@ func TestInitialization(t *testing.T) {
     DBAddr: "127.0.0.1",
     StartupPort: ":4960",
     SiteName: "example.com",
-    ResoruceDirectory: "../../test",
   }
   if cfg.DBName != assumed_config_file.DBName {
     t.Fatal("DBName mismatch", cfg.DBName , assumed_config_file.DBName )
@@ -94,9 +91,6 @@ func TestInitialization(t *testing.T) {
   }
   if cfg.SiteName != assumed_config_file.SiteName {
     t.Fatal("SiteName mismatch", cfg.SiteName , assumed_config_file.SiteName )
-  }
-  if cfg.ResoruceDirectory != assumed_config_file.ResoruceDirectory {
-    t.Fatal("ResoruceDirectory mismatch", cfg.ResoruceDirectory , assumed_config_file.ResoruceDirectory )
   }
 
   // Use the should-be set DB connection to:
