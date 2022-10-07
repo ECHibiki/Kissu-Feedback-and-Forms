@@ -1,6 +1,7 @@
 package main
 import (
   "fmt"
+  // "os"
   "database/sql"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/globals"
@@ -46,7 +47,9 @@ func main(){
   } else{
     db , cfg = initializeFromConfigFile(globals.RootDirectory)
   }
-  stick := templater.ReturnFileSystemTemplateHandler(globals.RootDirectory)
+
+  stick := templater.ReturnFileSystemTemplateHandler(globals.RootDirectory + "templates")
+  // stick := templater.ReturnTemplateHandler()
 
   gin_engine := routeGin(&cfg, db , stick )
   runGin(gin_engine , cfg.StartupPort)

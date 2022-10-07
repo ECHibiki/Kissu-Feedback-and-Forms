@@ -140,7 +140,7 @@ func CreateReadmeForGivenForm(db *sql.DB , id int64 , initialization_folder stri
   for _ , field := range fields {
     field_map[field.GetName()] = field.GetDescription()
   }
-  err = tools.WriteJSONReadmeToDir(initialization_folder + "/data/" + form_data.Name + "/description.json" , field_map)
+  err = tools.WriteJSONReadmeToDir(initialization_folder + "/data/" + form_data.Name + "/field-descriptors.json" , field_map)
   return err
 }
 

@@ -43,11 +43,14 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB , stick *stick.Env ) 
  gin_engine.SetTrustedProxies([]string{"127.0.0.1"})
 
  {
+   gin_engine.Static( "/assets", globals.RootDirectory + "public" ) //
 
    gin_engine.GET("/", generalGetHomepageHandler( stick )) //
+   gin_engine.POST("/", modPostLoginForm( db , cfg , stick ))
 
     public_group := gin_engine.Group("/public")
     {
+      public_group.GET("/", generalGetHomepageHandler( stick )) //
       // Handle form requests and build forms
       public_group.GET("/forms/:formname/:formnum", userServeForm(db , stick)) //
       public_group.POST("/forms/:formname/:formnum", userPostForm( db )) //
@@ -60,7 +63,6 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB , stick *stick.Env ) 
    {
      // list menu CREATE/VIEW
      mod_group.GET("/", modServeHomepageHandler( stick )) //
-     mod_group.POST("/", modPostLoginForm( db , cfg , stick ))
      // build a form
      mod_group.GET("/create", modServeCreateForm( stick )) //
      mod_group.POST("/create", modPostCreateForm( db )) //
@@ -113,7 +115,7 @@ func placeholderHandler() gin.HandlerFunc {
 
 func generalGetHomepageHandler(env *stick.Env) gin.HandlerFunc {
   return func (c *gin.Context) {
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/user-views/user-home.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
+    template , err := templater.ReturnFilledTemplate(env , "user-views/user-home.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Home generation failed"  } )
@@ -126,7 +128,7 @@ func generalGetHomepageHandler(env *stick.Env) gin.HandlerFunc {
 // Handle route to /mod
 func modServeHomepageHandler(env *stick.Env) gin.HandlerFunc {
   return func (c *gin.Context) {
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-home.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-home.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Homepage generation failed"} )
@@ -142,7 +144,7 @@ func modServeHomepageHandler(env *stick.Env) gin.HandlerFunc {
 // Handle route /mod/create
 func modServeCreateForm(env *stick.Env) gin.HandlerFunc {
   return func (c *gin.Context) {
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-create.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-create.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Creator generation failed"} )
@@ -177,7 +179,7 @@ func modServeEditForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Invalid Unmarshaling of form"} )
       return
     }
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-edit.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-edit.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -197,7 +199,7 @@ func modServeViewAllForms(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Can't get forms"} )
       return
     }
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-form-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form_list" : form_data_list })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-form-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form_list" : form_data_list })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -236,7 +238,7 @@ func modServeViewSingleForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Can't get form replies"} )
       return
     }
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-reply-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "replies": reply_list })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "replies": reply_list })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -283,7 +285,7 @@ func modServeViewSingleResponse(db *sql.DB , env *stick.Env) gin.HandlerFunc {
     reply_construct["Identifier"] = reply_data.Identifier
     reply_construct["SubmittedAt"] = strconv.Itoa(int(reply_data.SubmittedAt))
 
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-reply.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "reply": reply_construct })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "reply": reply_construct })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -359,7 +361,7 @@ func userServeForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve source file"})
       return
     }
-    template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/user-views/user-form.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : rebuild_group })
+    template , err := templater.ReturnFilledTemplate(env , "user-views/user-form.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : rebuild_group })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -378,7 +380,7 @@ func modPostLoginForm(db *sql.DB , cfg *types.ConfigurationSettings , env *stick
     json := c.PostForm("json")
     stored_pass , err := getStoredPassword(db)
     if err != nil && json == "" {
-      template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "DB Error" })
+      template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "DB Error" })
       if err != nil{
         fmt.Println(err)
         c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -391,12 +393,12 @@ func modPostLoginForm(db *sql.DB , cfg *types.ConfigurationSettings , env *stick
     }
     ip := c.ClientIP()
     param_pass := c.PostForm("password")
-    err = CheckPasswordValid( stored_pass.HashedPassword , param_pass )
+    err = CheckPasswordValid(  param_pass , stored_pass.HashedPassword )
     if err != nil {
+      fmt.Println(err)
       if json == "" {
-        template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "Invalid Password" })
+        template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "Invalid Password" })
         if err != nil{
-          fmt.Println(err)
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
           return
         }
@@ -414,9 +416,9 @@ func modPostLoginForm(db *sql.DB , cfg *types.ConfigurationSettings , env *stick
       err = StoreLogin(db , login_fields)
       if err != nil {
         if json == "" {
-          template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "Login Storage Error" })
+          template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "Login Storage Error" })
+          fmt.Println(err)
           if err != nil{
-            fmt.Println(err)
             c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
             return
           }
@@ -429,7 +431,7 @@ func modPostLoginForm(db *sql.DB , cfg *types.ConfigurationSettings , env *stick
       if json == "" {
         // (name, value string, maxAge int, path, domain string, secure, httpOnly bool)
         c.SetCookie("verified" , session_key_safe , int(30 * 24 * 60 * 60) , "/" , cfg.SiteName, true , true)
-        c.Redirect(http.StatusMovedPermanently, "/")
+        c.Redirect(http.StatusMovedPermanently, "/mod")
       } else{
         c.AbortWithStatusJSON(http.StatusOK ,  gin.H{"message": "Success"} )
       }
@@ -654,16 +656,19 @@ func authenticationMiddleware(db *sql.DB , env *stick.Env) gin.HandlerFunc{
 
       err = CheckCookieValid(db , cookie_verification , ip)
       if err != nil && json != "" {
+        fmt.Println(err)
         c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Unauthorized"})
       } else if err != nil{
         // ReturnFilledTemplate(env *stick.Env, template_path string, value_map map[string]stick.Value) (string , error)
-        template , err := templater.ReturnFilledTemplate(env , globals.RootDirectory + "templates/mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "error" : "Login Storage Error" })
+        template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-login.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion })
         if err != nil {
+          fmt.Println(err)
           c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Unauthorized - Login Form Tenmplate Error"})
           return
         }
         c.Header("Content-Type", "text/html")
         serveTwigTemplate(c , http.StatusUnauthorized , template)
+        c.Abort()
       }
       c.Next()
   	}

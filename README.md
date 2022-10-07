@@ -14,7 +14,7 @@ Javascript is handled through a package containing functions which are used by t
 
 ## Tech
  - Gin Server
- - ~~Twig Templates~~ Standard Templates
+ - Twig Templates
  - Fuzzing tests and 'Test Driven Development'
 
 ## Support

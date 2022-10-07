@@ -90,16 +90,13 @@ func CreateDownloadableForGivenForm(initialization_folder string , form_name str
   file_path := initialization_folder + "/data/" + form_name + "/downloadable.tar.gz"
 
   err  := os.Remove(file_path)
-  if err != nil {
-    return err
-  }
 
   var buf bytes.Buffer
   zr := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(zr)
 
 	// walk through every file in the folder
-	filepath.Walk(form_dir, func(file string, fi os.FileInfo, err error) error {
+	err = filepath.Walk(form_dir, func(file string, fi os.FileInfo, err error) error {
   		// generate tar header
   		header, err := tar.FileInfoHeader(fi, file)
   		if err != nil {
@@ -126,6 +123,9 @@ func CreateDownloadableForGivenForm(initialization_folder string , form_name str
   		}
   		return nil
 	})
+  if err != nil {
+    return err
+  }
 
 	// produce tar
 	if err := tw.Close(); err != nil {

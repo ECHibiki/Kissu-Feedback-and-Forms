@@ -28,11 +28,11 @@ func TestDeleteOfForm(t *testing.T){
   if err != nil {
     t.Fatal(err)
   }
-  prebuilder.ReplyToForm( 1 , second_store, "192.168.1.3", db , initialization_folder)
-  prebuilder.ReplyToForm( 2 , first_store , "192.168.1.1" , db , initialization_folder)
-  prebuilder.ReplyToForm( 2 , first_store, "192.168.1.2", db , initialization_folder)
+  prebuilder.ReplyToForm( 1 , first_store, "192.168.1.1", db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , second_store , "192.168.1.2" , db , initialization_folder)
+  prebuilder.ReplyToForm( 2 , second_store, "192.168.1.3", db , initialization_folder)
 
-  destroyer.DeleteForm(db  , first_store)
+  destroyer.DeleteForm(db  , second_store)
 
   r , err := returner.GetResponseByID(db , 3)
   if err == nil {

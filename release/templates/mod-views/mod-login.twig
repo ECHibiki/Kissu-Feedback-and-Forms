@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <HTML>
   <HEAD>
-    {% include 'mod-header.twig' %}
+    {% include 'mod-views/mod-header.twig' %}
     <TITLE>Kissu Feedback & Forms - Login</TITLE>
   </HEAD>
   <BODY>
@@ -10,7 +10,8 @@
       <INPUT type="password" name="password" />
       <INPUT type="submit"/>
     </FORM>
+    <p id="error-container"> {{ error }} </p>
     <HR/>
-    {% include 'mod-footer.twig' %}
+    {% include 'mod-views/mod-footer.twig' %}
   </BODY>
 </HTML>

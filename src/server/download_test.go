@@ -2,6 +2,7 @@ package main
 import(
   "testing"
   "os"
+  // "fmt"
   prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
@@ -35,18 +36,27 @@ func TestCompressionOfGivenForm(t *testing.T){
     // Steps: Get form for all Columns from FormConstruct and initialize a map[string][]string, get all rows and fill into the map
     //        In order defined by FormConstruct, createa a [][]sring for CSV creation
 
-  returner.CreateInstancedCSVForGivenForm(db , 2 , initialization_folder)
+  err = returner.CreateInstancedCSVForGivenForm(db , 2 , initialization_folder)
+  if err != nil {
+    t.Fatal(err)
+  }
   _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/data.csv")
   if err != nil {
     t.Fatal(err)
   }
-  returner.CreateReadmeForGivenForm(db , 2 , initialization_folder)
-  _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/descriptions.json")
+  err = returner.CreateReadmeForGivenForm(db , 2 , initialization_folder)
+  if err != nil {
+    t.Fatal(err)
+  }
+  _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/field-descriptors.json")
   if err != nil {
     t.Fatal(err)
   }
   // A tar.gz file containing the CSV, as it has zipped the entire form directory together
-  tools.CreateDownloadableForGivenForm(initialization_folder , second_store )
+  err = tools.CreateDownloadableForGivenForm(initialization_folder , second_store  )
+  if err != nil {
+    t.Fatal(err)
+  }
   _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/downloadable.tar.gz")
   if err != nil {
     t.Fatal(err)
