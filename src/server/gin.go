@@ -65,7 +65,7 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB , stick *stick.Env ) 
      mod_group.GET("/", modServeHomepageHandler( stick )) //
      // build a form
      mod_group.GET("/create", modServeCreateForm( stick )) //
-     mod_group.POST("/create", modPostCreateForm( db )) //
+     mod_group.POST("/create", modPostCreateForm( db , cfg )) //
      // edit a form
      mod_group.GET("/edit/:formnum", modServeEditForm( db  , stick ))
      mod_group.POST("/edit/:formnum", modPostEditForm( db ))
@@ -367,7 +367,8 @@ func userServeForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
       return
     }
-    serveTwigTemplate(c , http.StatusInternalServerError , template)
+    fmt.Println("SERVE")
+    serveTwigTemplate(c , http.StatusOK , template)
   }
   //Oct3
 }
@@ -441,8 +442,8 @@ func modPostLoginForm(db *sql.DB , cfg *types.ConfigurationSettings , env *stick
 
 func userPostForm(db *sql.DB) gin.HandlerFunc {
   return func (c *gin.Context) {
-    var response_map map[string]string
-    var file_map map[string]former.MultipartFile
+    var response_map map[string]string = make(map[string]string)
+    var file_map map[string]former.MultipartFile = make(map[string]former.MultipartFile)
 
     form_name := c.Param("formname")
     form_num , err := strconv.Atoi(c.Param("formnum"))
@@ -460,8 +461,9 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue unmarshalling input"} )
     }
 
-    responder.FillMapWithPostParams(c , &response_map , form_construct)
-    responder.FillMapWithPostFiles(c , &file_map , form_construct)
+    responder.FillMapWithPostParams(c , response_map , form_construct)
+    responder.FillMapWithPostFiles(c , file_map , form_construct)
+    fmt.Println(form_construct , response_map)
 
     response_form := former.FormResponse{
       FormName: form_name,
@@ -479,7 +481,7 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
       responder.DeleteDatabaseResponse(db , int64(form_num) , old_user_name )
     }
 
-    if _ , ok := response_map["anon-option"] ; ok {
+    if _ , ok := c.GetPostForm("anon-option") ; ok {
       response_form.ScrambleResponderID()
     }
 
@@ -537,18 +539,22 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
   }
 }
 
-func modPostCreateForm(db *sql.DB) gin.HandlerFunc {
+func modPostCreateForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.HandlerFunc {
   return func (c *gin.Context) {
     form_construct_raw := c.PostForm("form-construct-json")
     var form_construct former.FormConstruct
     err := json.Unmarshal([]byte(form_construct_raw), &form_construct)
+
+    um , _ := json.Marshal(form_construct)
+    fmt.Println( form_construct_raw )
+    fmt.Println(string(um))
+
     if err != nil {
-      fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue unmarshalling input"} )
     }
     issue_list := builder.ValidateForm(db, form_construct)
     if len(issue_list) > 0 {
-      fmt.Println(err)
+      fmt.Println(issue_list)
       c.AbortWithStatusJSON(http.StatusNotAcceptable ,  gin.H{"error": "Invalid inputs" , "error-list" : issue_list } )
       return
     } else{
@@ -558,7 +564,7 @@ func modPostCreateForm(db *sql.DB) gin.HandlerFunc {
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Inputs"} )
           return
         }
-        err = builder.StoreForm(db, insertable_form)
+        last_id , err := builder.StoreForm(db, insertable_form)
         if err != nil{
           fmt.Println(err)
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with DB writing"} )
@@ -571,7 +577,7 @@ func modPostCreateForm(db *sql.DB) gin.HandlerFunc {
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Folder writing"} )
           return
         }
-        c.JSON(http.StatusOK, gin.H{ "message" : "Form written" })
+        c.JSON(http.StatusOK, gin.H{ "message" : "Form written" , "URL": "https://" + cfg.SiteName + "/public/forms/" + form_construct.StorageName() + "/" +  strconv.Itoa(last_id) })
     }
   }
   //Oct3

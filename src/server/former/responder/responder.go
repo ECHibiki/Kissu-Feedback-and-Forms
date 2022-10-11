@@ -60,6 +60,7 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
         select_group , is_selection := respondable.Object.(former.SelectionGroup)
         if is_selection && select_group.SelectionCategory == former.Checkbox {
           answer_found := false
+          fmt.Println("Select" , select_group.CheckableItems , text_responses)
           for i , _ := range select_group.CheckableItems {
             _ , ok := text_responses[ name + "-" + strconv.Itoa(i + 1) ]
             if ok {
@@ -310,23 +311,33 @@ func CheckIfEdit(db *sql.DB , new_response former.FormResponse) (bool , string, 
   }
 }
 
-func FillMapWithPostParams(c *gin.Context , resp_map *map[string]string , form former.FormConstruct){
+func FillMapWithPostParams(c *gin.Context , resp_map map[string]string , form former.FormConstruct){
   if len(form.FormFields) == 0 {
     return
   }
-  var stack_map map[string]string = make(map[string]string)
   var subgroup_stack []former.FormGroup
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // fail location identified by an ID
+  fmt.Println("SS" , subgroup_stack)
   for len(subgroup_stack) > 0  {
     item := subgroup_stack[len(subgroup_stack) - 1]
+    fmt.Println("it" , item)
     subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
     if len(item.Respondables) != 0 {
       for _ , r := range item.Respondables {
         if r.Type == former.FileInputTag {
           continue
         }
-        stack_map[r.Object.GetName()] = c.Param(r.Object.GetName())
+        fmt.Println("sm" , r.Object.GetName() , c.PostForm(r.Object.GetName()) , r)
+        if r.Type == former.SelectionGroupTag && r.Object.(former.SelectionGroup).SelectionCategory == former.Checkbox {
+          for i , _ := range r.Object.(former.SelectionGroup).CheckableItems {
+            if _ , exists :=  c.GetPostForm(r.Object.GetName() + "-" + strconv.Itoa(i + 1)) ; exists{
+              resp_map[r.Object.GetName() + "-" + strconv.Itoa(i + 1)] = c.PostForm(r.Object.GetName() + "-" + strconv.Itoa(i + 1))
+            }
+          }
+        } else{
+          resp_map[r.Object.GetName()] = c.PostForm(r.Object.GetName())
+        }
       }
     }
     if len(item.SubGroup) != 0 {
@@ -334,13 +345,12 @@ func FillMapWithPostParams(c *gin.Context , resp_map *map[string]string , form f
       subgroup_stack = append(subgroup_stack , item.SubGroup...)
     }
   }
-  resp_map = &stack_map
+  fmt.Println(resp_map)
 }
-func FillMapWithPostFiles(c *gin.Context , file_map *map[string]former.MultipartFile , form former.FormConstruct){
+func FillMapWithPostFiles(c *gin.Context , file_map map[string]former.MultipartFile , form former.FormConstruct){
   if len(form.FormFields) == 0 {
     return
   }
-  var stack_map map[string]former.MultipartFile = make(map[string]former.MultipartFile)
   var subgroup_stack []former.FormGroup
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // fail location identified by an ID
@@ -355,7 +365,7 @@ func FillMapWithPostFiles(c *gin.Context , file_map *map[string]former.Multipart
             File: image,
             Header: header,
           }
-          stack_map[r.Object.GetName()] = mp
+          file_map[r.Object.GetName()] = mp
         }
       }
     }
@@ -364,7 +374,6 @@ func FillMapWithPostFiles(c *gin.Context , file_map *map[string]former.Multipart
       subgroup_stack = append(subgroup_stack , item.SubGroup...)
     }
   }
-  file_map = &stack_map
 }
 
 func DeleteResponderFolder(root_dir string,  new_response former.FormResponse , old_user_name string) error{

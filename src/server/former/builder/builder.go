@@ -52,6 +52,9 @@ func checkNameUnique(db *sql.DB ,  form former.FormConstruct ) (error_list forme
 }
 
 func ValidateForm(db *sql.DB , form former.FormConstruct) (error_list []former.FailureObject) {
+  if form.FormName == ""{
+    error_list = append(error_list , former.FailureObject{ former.HeadMissingFormNameMessage , former.HeadMissingFormNameCode, form.FormName })
+  }
 
   dupe_err := checkNameUnique(db , form)
   if dupe_err.FailType != "" {
@@ -160,9 +163,6 @@ func checkNameAndIDUniqueness(form former.FormConstruct) (error_list []former.Fa
 }
 
 func checkNameAndIDPropperCharacters(form former.FormConstruct) (error_list []former.FailureObject)  {
-  if len(form.FormFields) == 0 {
-    return []former.FailureObject{}
-  }
 
   var ids []string = []string{form.ID}
   var names []string
@@ -188,6 +188,7 @@ func checkNameAndIDPropperCharacters(form former.FormConstruct) (error_list []fo
 
   invalid_entry := regexp.MustCompile("^[^a-zA-Z]")
   invalid_body := regexp.MustCompile("[^a-zA-Z0-9\\-_:\\.]")
+
   for _ , id := range ids {
     if len(id) == 0 {
       error_list = append(error_list , former.FailureObject{ former.EmptyIDMessage , former.EmptyIDCode, id } )
@@ -244,8 +245,13 @@ func ValidateFormEdit(replace former.FormConstruct , base former.FormConstruct) 
   return
 }
 
-func StoreForm(db *sql.DB , db_form types.FormDBFields ) error{
-  return tools.StoreFormToDB(db , db_form)
+func StoreForm(db *sql.DB , db_form types.FormDBFields ) (int , error){
+  err :=  tools.StoreFormToDB(db , db_form)
+  if err != nil {
+    return 0 ,err
+  }
+  return tools.GetLastIndex(db, "forms")
+
 }
 func UpdateForm( db *sql.DB , index int64 , db_form types.FormDBFields ) error {
   _, err := db.Exec("UPDATE forms SET field_json = ? , updated_at = ? WHERE id = ?" , db_form.FieldJSON, db_form.UpdatedAt, index)

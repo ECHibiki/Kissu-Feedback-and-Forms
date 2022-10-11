@@ -80,3 +80,10 @@ func StoreResponseToDB(db *sql.DB , db_response types.ResponseDBFields) error{
   _ , err := db.Exec("INSERT INTO responses VALUES( NULL , ? , ? , ? , ? )"  , db_response.FK_ID  , db_response.Identifier , db_response.ResponseJSON, db_response.SubmittedAt)
   return err
 }
+func GetLastIndex(db  *sql.DB , table string) (int , error){
+  q := db.QueryRow("SELECT LAST_INSERT_ID()");
+  var db_response int
+  err := q.Scan(&db_response)
+  return db_response , err
+
+}

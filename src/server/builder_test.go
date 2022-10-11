@@ -188,13 +188,16 @@ func TestFormMake(t *testing.T){
   if insertable_form.UpdatedAt == 0{
     t.Fatal("Form construction did not set an updated time")
   }
-  err = builder.StoreForm(db, insertable_form)
+  last_index , err = builder.StoreForm(db, insertable_form)
   if err != nil{
     t.Fatal(err)
   }
+  if last_index != 1 {
+    t.Fatal("last index not correct")
+  }
 
   // do it again to garuntee multiple identical forms will not go through
-  err = builder.StoreForm(db, insertable_form)
+  _ , err = builder.StoreForm(db, insertable_form)
   if err == nil{
     t.Fatal("Form was inserted twice, with same name, and passed without error")
   }

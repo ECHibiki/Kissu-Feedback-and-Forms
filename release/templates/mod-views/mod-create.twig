@@ -18,18 +18,20 @@
     <FORM id="creator-form" onsubmit="return false">
       <DIV data-depth="0" id="head-group" class="form-group">
           <P>Required Fields:</P>
-          <LABEL>Form Name : <INPUT type="text" name="form-name"/> </LABEL> <br/>
-          <LABEL>Form ID : <INPUT type="text" name="id"/> <br/>
-          <LABEL>Form Descriptor : <INPUT type="text" name="description"/> <br/>
-          <LABEL>Allow Anonymous Submissions :<INPUT type="checkbox" name="anon-option"/>
-          <BUTTON id="head-group-create">Create Group</BUTTON><br/>
+          <LABEL>Form Title : <INPUT type="text" name="form-name" id="head-name"/> </LABEL> <br/>
+          <LABEL>Form ID : <INPUT type="text" name="id" id="head-id"/> </LABEL><br/>
+          <LABEL>Form Descriptor : <INPUT type="text" name="description" id="head-description"/> </LABEL><br/>
+          <LABEL>Allow Anonymous Submissions :<INPUT type="checkbox" name="anon-option" id="head-anon"/></LABEL><br/>
       </DIV>
+      <BUTTON data-link-id="head" id="sub-create">Create Field</BUTTON><br/>
       <!-- <DIV id="addable-container" class="field-container">
         <P>subgroup1 </P>
         <BUTTON id="subgroup1-respondable-create">Create New Respondable Below Last Respondable</BUTTON><br/>
         <BUTTON id="subgroup1-group-create">Create New Group Below Last Respondable</BUTTON><br/>
       </DIV> -->
+      <br/>
       <INPUT id="form-submit-button" type="submit"/>
+      <div id="response-container"></div>
     </FORM>
     <HR/>
     {% include 'mod-views/mod-footer.twig' %}

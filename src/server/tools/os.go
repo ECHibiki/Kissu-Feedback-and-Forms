@@ -87,7 +87,7 @@ func WriteFilesFromMultipart(root_dir string , response_struct former.FormRespon
 // borrowing from https://gist.github.com/mimoo/25fc9716e0f1353791f5908f94d6e726
 func CreateDownloadableForGivenForm(initialization_folder string , form_name string) error{
   form_dir := initialization_folder + "/data/" + form_name
-  file_path := initialization_folder + "/data/" + form_name + "/downloadable.tar.gz"
+  file_path := initialization_folder + "/data/" + form_name + "/" + form_name + "-downloadable.tar.gz"
 
   err  := os.Remove(file_path)
 

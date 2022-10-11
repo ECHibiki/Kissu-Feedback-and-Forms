@@ -42,8 +42,9 @@ const (
 )
 
 const (
-  GroupMissingMessage   FormValidationError    = "Form subgroup does not contain any items or a description. Add one of these to submit."
-  HeadMissingMessage                           = "Form group does not contain any items. Add one to submit."
+  GroupMissingMessage   FormValidationError    = "Form group does not contain any items or a description. Add one of these to submit."
+  HeadMissingMessage                           = "Form does not contain any items. Add one to submit."
+  HeadMissingFormNameMessage                   = "Form is missing a title."
 
   DuplicateFormNameMessage                     = "The form name conflicts with another form. Change the name."
   DuplicateNameMessage                         = "Form field names must be unique. Correct the duplicates."
@@ -73,6 +74,7 @@ const (
 const (
   HeadMissingCode  FormErrorCode = iota
   GroupMissingCode
+  HeadMissingFormNameCode
 
   DuplicateFormNameCode
   DuplicateNameCode
@@ -217,8 +219,8 @@ func (fc *FormConstruct) StorageName() string{
   safe_name = strings.ReplaceAll(safe_name , "." , "_")
   safe_name = strings.ReplaceAll(safe_name , "-" , "_")
   safe_name = strings.ReplaceAll(safe_name , " " , "_")
-  if len(safe_name) > 250 {
-    safe_name = safe_name[0:250]
+  if len(safe_name) > 200 {
+    safe_name = safe_name[0:200]
   }
   return safe_name
 }
@@ -369,6 +371,9 @@ type SelectionGroup struct{
   Field Field
   SelectionCategory SelectionCategory
   CheckableItems []Checkable
+}
+func (sg SelectionGroup) GetCategory() string {
+  return string(sg.SelectionCategory)
 }
 func (sg SelectionGroup) ElementType() string {
   return "INPUT"

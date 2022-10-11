@@ -1,64 +1,73 @@
-What's left to do...:
+// What's left to do...:
+//
+// correct this file
+// Submit a form
+// hndle errors
+//
+// Render the form for a client
+// Allow client to respond
+//
+// Allow mod to view responses(forms, form, replies)
+//
+// Upload beta version to site
+// Finish implementing other fields, create and recieve
+// Allow form edits
+// Allow downloads
+// Allow deletes on form and reply
+//
+// API for displaying data
+// Remake this file with react components and a better mod view mode
 
-correct this file
-Submit a form
-hndle errors
-Render the form for a client
-Allow client to respond
-Allow mod to view responses(forms, form, replies)
-Upload beta version to site
-Finish implementing other fields, create and recieve
-Allow form edits
-Allow downloads
-Allow deletes, form and reply
-
-API for displaying data
-Remake this file with react components and a better mod view mode
-
-// the API file for displaying various views
-// I'm gonna have to not hardcode this later... consider this file essentially a draft
+// the library file for displaying various views
+// I'm gonna have to not hardcode(eg. nextSibling) this later... consider this file essentially a draft
 
 export function helloWorld() {
   console.log("hello client");
 }
 
 export function attatchCreators(){
-  let root_group_button = document.getElementById("head-root-group-create")
-  root_group_button.onclick = createNewSubgroup(root_group_button , 0)
+  let root_group_button = document.getElementById("sub-create")
+  root_group_button.onclick = () => createNewSubgroup(root_group_button as HTMLButtonElement)
 
   let submit_button = document.getElementById("form-submit-button")
-  submit_button.onclick = submitForm(submit_button )
+  submit_button.onclick = () =>  submitForm(submit_button  as HTMLButtonElement )
 }
 
-function createNewSubgroup( button: HTMLButtonElement, base_no: number  ){
-  let parent_container =  button.parentNode
-  base_no += 1
+export function createNewSubgroup( button: HTMLButtonElement){
+  let parent_id = button.getAttribute("data-link-id")
+  let parent_container =  document.getElementById(parent_id + "-group")
+  console.log(parent_id , parent_container)
+
+  let group_id = "group" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
   container.className =  "subgroup form-group"
-  container.style= "border:1px solid black;"
-  container.innerHTML = `
-  <P>Required Fields:</P>
-  <LABEL>Form Name : <INPUT type="text" name="form-name"/> </LABEL> <br/>
-  <LABEL>Form ID : <INPUT type="text" name="id"/> <br/>
-  <LABEL>Form Descriptor : <INPUT type="text" name="description"/> <br/>
-  <LABEL>Allow Anonymous Submissions :<INPUT type="checkbox" name="anon-option"/>
-  <SPAN data-depth="${base_no}" class="respondable-container"> <SPAN><BR/>
-  <BUTTON  onclick="FormLibrary.createNewResponseElement(this , ${base_no})">Create New Respondable Below Last Respondable</BUTTON><br/>
-  <BUTTON  onclick="FormLibrary.createNewSubgroup(this , ${base_no})">Create New Group Below Last Respondable</BUTTON><br/>
+  container.id =  group_id + "-group"
+  container.setAttribute("style" , "border:1px solid black;")
+  container.innerHTML = `<LABEL>Group Label : <INPUT type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
+  <LABEL>Group ID : <INPUT type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
+  <LABEL>Form Descriptor : <INPUT type="text" name="description" id="${group_id}-description"/></LABEL> <br/>
+  <BUTTON  onclick="FormLibrary.createNewResponseElement(this)" data-link-id="${group_id}" >Create New Respondable Below Last Respondable</BUTTON><br/>
+  <BUTTON  onclick="FormLibrary.createNewSubgroup(this)" data-link-id="${group_id}">Create New Group Below Last Respondable</BUTTON><br/>
+  <BUTTON  onclick="FormLibrary.deleteContainer('${parent_id + "-group"}' , '${ group_id + "-group"}')">Delete Subgroup</BUTTON><br/>
+  <SPAN  class="respondable-container" id="${group_id}-respondables"></SPAN><BR/>
   `
   parent_container.appendChild(container)
 }
 
-function createNewResponseElement(button: HTMLButtonElement , base_no: number ){
-  respondable_container = button.previousSibling.previousSibling
+export function createNewResponseElement(button: HTMLButtonElement ){
+  let parent_id = button.getAttribute("data-link-id")
+  let respondable_container =  document.getElementById(parent_id + "-respondables")
+  console.log(parent_id , respondable_container)
 
+  let res_id = "response" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
   container.className =  "creation-prompt"
-  container.style= "border:1px solid black;width:400px;height:200px"
+  container.id =  res_id + "-fields"
+  container.setAttribute("style", "border:1px solid black;width:400px;min-height:200px")
   container.innerHTML = `Element Creation Info:<BR/>
     <UL>
       <LI>Item Type:
-        <SELECT>
+        <SELECT id="${res_id}-type">
           <OPTION value="textarea">TextArea</OPTION>
           <OPTION value="input">Input(unimplemented)</OPTION>
           <OPTION value="file">FileInput(unimplemented)</OPTION>
@@ -66,7 +75,9 @@ function createNewResponseElement(button: HTMLButtonElement , base_no: number ){
           <OPTION value="option">OptionGroup(unimplemented)</OPTION>
         </SELECT>
       </LI>
-      <LI><BUTTON onclick="FormLibrary.responseTypeSelected(this, ${base_no})">Next</BUTTON></LI>
+      <LI>If we want any of the unimplemented features, then you'll have to ask me or wait until I personally require it</LI>
+      <LI><BUTTON data-link-id="${res_id}" onclick="FormLibrary.responseTypeSelected('${parent_id + "-respondables"}' , this)">Next</BUTTON></LI>
+      <LI><BUTTON  data-link-id="${res_id}" onclick="FormLibrary.deleteContainer('${parent_id + "-respondables"}' , '${res_id + "-fields"}')">Delete</BUTTON></LI>
     </UL>`
 
     // CREATE NEW AT END
@@ -74,87 +85,106 @@ function createNewResponseElement(button: HTMLButtonElement , base_no: number ){
     respondable_container.appendChild(container)
 }
 
-function createTextAreaInputs(container: HTMLDivElement, base_no: number){
+export function deleteContainer(base_container_id:string , sub_container_id:string){
+  document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));
+}
+
+export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement){
+  let field_id = "field" + base_id
+  let ta_id = "text-area" + (Date.now() + Math.random())
   container.className =  "field-container"
-  container.style= "border:1px solid black;width:400px;height:200px"
+  container.id = ta_id
+  container.setAttribute("data-type", "textarea")
+  container.setAttribute("style" ,"border:1px solid black;width:400px;min-height:200px")
   container.innerHTML = `TextArea Creation Info:<BR/>
-  <INPUT data-depth="${base_no}" type="hidden" name="type" value="textarea" />
     <UL>
       <LI>
-        Name : <INPUT  data-depth="${base_no}" data-field="1" name='name'/><BR/>
+        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT data-depth="${base_no}" data-field="1" name='Label'/><BR/>
+        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT data-depth="${base_no}" data-field="1" name='Required' type="checkbox"/><BR/>
+        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
       </LI>
       <LI>
-        Placeholder : <INPUT data-depth="${base_no}" data-field="1" name='placeholder'/><BR/>
+        Placeholder : <INPUT  data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
       </LI>
+      <LI><BUTTON onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${ta_id}')">Delete</BUTTON></LI>
     </UL>`;
 }
 
-function createSelectGroup(container: HTMLDivElement , base_no: number){
+export function createSelectGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement){
+  let field_id = "field" + (Date.now() + Math.random())
+  let select_id = "select" + (Date.now() + Math.random())
   container.className =  "field-container"
-  container.style= "border:1px solid black;width:400px;height:200px"
+  container.id =  select_id
+  container.setAttribute("data-type", "selectiongroup")
+  container.setAttribute("style", "border:1px solid black;width:400px;min-height:200px")
   container.innerHTML = `TextArea Creation Info:<BR/>
-    <INPUT type="hidden" name="type" value="selectiongroup" />
     <UL>
       <LI>
-        Name : <INPUT data-depth="${base_no}" data-field="1" name='name'/><BR/>
+        Name : <INPUT  data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT data-depth="${base_no}" data-field="1" name='Label'/><BR/>
+        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT data-depth="${base_no}" data-field="1" name='Required' type="checkbox"/><BR/>
+        Required : <INPUT  data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
       </LI>
       <LI>
-        Select type : <SELECT data-depth="${base_no}" data-field="1" name='SelectionCategory' type="checkbox">
+        Select type : <SELECT  data-field="1" name='SelectionCategory' type="checkbox" id="${field_id}-selectioncatergory">
           <OPTION value="checkbox">checkbox</OPTION>
           <OPTION value="radio">radio</OPTION>
         </SELECT><BR/>
       </LI>
       <LI>
         Group Items :
-        <BUTTON onclick="FormLibrary.addCheckable(this)">+</BUTTON>
-        <BUTTON onclick="FormLibrary.removeCheckable(this)">-</BUTTON><BR/>
-        <OL data-field="1" data-select="1">
+        <BUTTON onclick="FormLibrary.addCheckable(this)" data-link-id="${field_id}">+</BUTTON>
+        <BUTTON onclick="FormLibrary.removeCheckable(this)" data-link-id="${field_id}">-</BUTTON><BR/>
+        <OL data-field="1" data-select="1" id="${field_id}-checkable">
           <LI>
-            <INPUT placeholder="Label" data-depth="${base_no}" data-checkable-no="1" data-field="1" name='Label'/>
-            <INPUT placeholder="Value" data-depth="${base_no}" data-checkable-no="1" data-field="1" name='Value'/>
+            <INPUT placeholder="Label"  data-checkable-no="0" data-field="1" name='Label' id="${field_id}-checkable-label-0"/>
+            <INPUT placeholder="Value"  data-checkable-no="0" data-field="1" name='Value'  id="${field_id}-checkable-value-0"/>
           </LI>
         </OL>
       </LI>
+      <LI><BUTTON onclick="FormLibrary.deleteContainer('${respondable_container_id}" , '${select_id}")">Delete</BUTTON></LI>
     </UL>`;
 }
 
-function addCheckable(button : HTMLButtonElement) {
-  let ol = button.nextSibling.nextSibling.nextSibling
+export function addCheckable(button : HTMLButtonElement) {
+  let parent_id = button.getAttribute("data-link-id")
+  let ol = document.getElementById(parent_id + "-checkable")
   let li = document.createElement("LI")
-  let child_count = li.children.length
-  li.InnterHTML = `
-    <INPUT placeholder="Label" data-depth="${base_no}" data-checkable-no="${child_count.length}" data-field="1" name='Label'/>
-    <INPUT placeholder="Value" data-depth="${base_no}" data-checkable-no="${child_count.length}" data-field="1" name='Value'/>
+  let child_count = ol.children.length
+  li.innerHTML = `
+    <INPUT placeholder="Label" data-checkable-no="${child_count}" data-field="1" name='Label' id="${parent_id}-checkable-label-${child_count}"/>
+    <INPUT placeholder="Value" data-checkable-no="${child_count}" data-field="1" name='Value' id="${parent_id}-checkable-name-${child_count}"/>
   `
   ol.appendChild(li)
 }
-function removeCheckable(button : HTMLButtonElement) {
-  let ol = button.nextSibling.nextSibling
+export function removeCheckable(button : HTMLButtonElement) {
+  let parent_id = button.getAttribute("data-link-id")
+  let ol = document.getElementById(parent_id + "-checkable")
+  if (ol.childNodes.length <= 1) {
+    return
+  }
   ol.removeChild(ol.lastChild)
 }
 
-function responseTypeSelected(button: HTMLButtonElement , base_no: number){
-  let select_obj = button.parentNode.previousSibling.firstChild
-  let container = button.parentNode.parentNode.parentNode
-  let selection = select_obj.value
+export function responseTypeSelected(respondable_container_id:string , button: HTMLButtonElement ){
+  let base_id = button.getAttribute("data-link-id")
+  let select_obj = document.getElementById(base_id + "-type")
+  let container = document.getElementById(base_id + "-fields") as HTMLDivElement
+  console.log(base_id , select_obj , container)
+  let selection = (select_obj as HTMLInputElement).value
   switch (selection) {
     case "textarea":
-      createTextAreaInputs(container , base_no)
+      createTextAreaInputs(base_id , respondable_container_id , container)
       break;
     case "select":
-      createSelectGroup(container , base_no)
+      createSelectGroup(base_id , respondable_container_id , container)
 
       break;
 
@@ -197,8 +227,7 @@ type FormConstruct struct {
   }
 */
 
-function submitForm(button: HTMLButtonElement){
-  let form_container = button.parentNode
+export function submitForm(button: HTMLButtonElement){
   let response_object = {
     FormName: "",
     ID: "",
@@ -212,32 +241,42 @@ function submitForm(button: HTMLButtonElement){
   // marshals into type FormConstruct struct
   // get the first entry div and fill out FormConstruct's default params
   let form_stack = []
-  for (let child in form_container.firstChild.childNodes){
-    if (child.className.indexOf("form-group") != -1){
-      form_stack.unshift( {node: child , paths: [0]} )
+  let first_depth_no = 0;
+  let node_list = document.getElementById("head-group").childNodes
+  // console.log(node_list)
+  for (let index = 0 ; index < node_list.length ; index++ ){
+    if(node_list[index].nodeType != Node.ELEMENT_NODE){
+      continue
+    }
+    // console.log(node_list[index].nodeType , Node.ELEMENT_NODE , node_list[index])
+    if ((node_list[index] as HTMLElement).className.indexOf("form-group") != -1){
+      form_stack.unshift( {node: (node_list[index] as HTMLElement) , paths: [first_depth_no]} )
+      first_depth_no += 1;
       response_object["FormFields"].push({
-        FormName: "",
+        Label: "",
         ID: "",
         Description: "",
         SubGroup: [],
-        Respondables: []],
+        Respondables: [],
       })
-    } else{
-      switch (child.getAttribute("name")) {
+    } else if((node_list[index] as HTMLLabelElement).tagName.toUpperCase() == "LABEL"){
+      let input_node = (node_list[index]  as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+      // console.log(node_list[index] , input_node)
+      switch (input_node.getAttribute("name")) {
         case "form-name":
-        response_object["FormName"] = child.value
+        response_object["FormName"] = input_node.value
 
           break;
         case "id":
-        response_object["ID"] = child.value
+        response_object["ID"] = input_node.value
 
           break;
         case "description":
-        response_object["Description"] = child.value
+        response_object["Description"] = input_node.value
 
           break;
         case "anon-option":
-        response_object["AnonOption"] = child.value
+        response_object["AnonOption"] = input_node.checked
 
           break;
 
@@ -246,7 +285,6 @@ function submitForm(button: HTMLButtonElement){
       }
     }
   }
-
   // Step through the first div
     // collect the fields defining the subgroup by type FormGroup struct
     // get the respondables span container <INPUT type="hidden" name="type" value="textarea" />
@@ -257,12 +295,16 @@ function submitForm(button: HTMLButtonElement){
     let level_order = 0
     let subgroup = form_stack.shift()
     let routes = subgroup.paths
-    let current_form_field = response_object["FormFields"][0]
-    routes.forEach((route:number) => {
-      current_form_field = current_form_field["SubGroup"][route]
-    });
+    let first_route = routes[0]
+    let current_form_field = response_object["FormFields"][first_route]
+    for (let route_position = 1 ; route_position < routes.length ; route_position++){
+      current_form_field = current_form_field["SubGroup"][routes[route_position]];
+    }
     for (let c = 0 ; c < subgroup.node.childNodes.length ; c++){
       let child = subgroup.node.childNodes[c];
+      if(child.nodeType != Node.ELEMENT_NODE){
+        continue
+      }
       if (child.className.indexOf("form-group") != -1){
         let r = routes
         r.push(level_order)
@@ -271,7 +313,7 @@ function submitForm(button: HTMLButtonElement){
         // If response_object Fields are not passed by reference then we'll have to do a reconstruction of the response object using current_form_field
         // Probably would be slow,  but is the first thing that comes to mind
         current_form_field["SubGroup"].push({
-          FormName: "",
+          Label: "",
           ID: "",
           Description: "",
           SubGroup: [],
@@ -280,39 +322,94 @@ function submitForm(button: HTMLButtonElement){
 
         // a respondable group
       } else if(child.className.indexOf("respondable-container") != -1) {
-        for (let c = 0 ; c < child.childNodes.length ; c++){
-          if (!child.childNodes[c].getAttribute("data-field") ){
-            continue
+        if(child.childNodes.length == 0 ){
+          continue;
+        }
+        let response_list =  child.childNodes
+        let len = response_list.length
+        console.log(response_list , len)
+        for (let res_index = 0 ; res_index < len ; res_index++){
+          let response_child = response_list[res_index]
+          let res = {Object: {Field: { Name: "", Label: "", Required: false} } , Type: response_child.getAttribute("data-type")}
+          let inputs = response_child.getElementsByTagName("INPUT")
+          let selects = response_child.getElementsByTagName("SELECT")
+          if(selects.length){
+            switch (response_child.getAttribute("data-type")) {
+              case "selectiongroup":
+                res.Object[selects[0].getAttribute("Name")] = selects[0].value
+                break;
+
+              default:
+                break;
+            }
           }
-          let res = {}
-          for (let res_index = 0 ; res_index < child.childNodes[c].childNodes.length ; res_index++){
-            let r = child.childNodes[c].childNodes[res_index]
-            if ( r.getAttribute("data-select") ){
-              res["CheckableItems"] = {}
-              //label
-              res["CheckableItems"]["Label"] = r.value
-              //value
-              res["CheckableItems"]["Value"] = r.value
+          for (let field_index = 0 ; field_index < inputs.length ; field_index++){
+            if(response_child.getAttribute("data-type") == "selectiongroup"){
+              // Selection groups
+              let val:any = inputs[field_index].value
+              if (inputs[field_index].getAttribute("type") == "checkbox"){
+                 val = inputs[field_index].checked
+              }
+
+              if(inputs[field_index].getAttribute("data-checkable-no")) {
+                if(!res.Object["CheckableItems"]){
+                  res.Object["CheckableItems"] = []
+                }
+                let checkitem_index = parseInt(inputs[field_index].getAttribute("data-checkable-no"))
+                if(!res.Object["CheckableItems"][checkitem_index]){
+                  res.Object["CheckableItems"][checkitem_index] = {}
+                }
+                res.Object["CheckableItems"][checkitem_index][inputs[field_index].getAttribute("name")] =  val
+              } else{
+                switch (inputs[field_index].getAttribute("name")) {
+                  case "Name":
+                  case "Label":
+                  case "Required":
+                    res.Object.Field[inputs[field_index].getAttribute("name")] =  val
+                    break;
+                  default:
+                    res.Object[inputs[field_index].getAttribute("name")] =  val
+                    break;
+                }
+              }
+            } else if(response_child.getAttribute("data-type") == "fileinput"){
+              // FileInputTag
             } else{
-              res[r.getAttribute("data-name")] = r.value
+              // Textarea and etc
+              let val:any = inputs[field_index].value
+              if (inputs[field_index].getAttribute("type") == "checkbox"){
+                 val = inputs[field_index].checked
+              }
+              console.log(inputs , inputs[field_index].getAttribute("name") ,  val)
+              switch (inputs[field_index].getAttribute("name")) {
+                case "Name":
+                case "Label":
+                case "Required":
+                  res.Object.Field[inputs[field_index].getAttribute("name")] =  val
+                  break;
+                default:
+                  res.Object[inputs[field_index].getAttribute("name")] =  val
+                  break;
+              }
             }
           }
           current_form_field["Respondables"].push(res)
         }
         // defined by UnmarshalerFormObject where object will be a name as key ->value as value type object
         //
-      } else{
-        switch (child.getAttribute("name")) {
-          case "form-name":
-          current_form_field["FormName"] = child.value
+      } else if((child as HTMLLabelElement).tagName.toUpperCase() == "LABEL"){
+        let input_node = (child  as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+        switch (input_node.getAttribute("name")) {
+          case "form-label":
+          current_form_field["Label"] = input_node.value
 
             break;
           case "id":
-          current_form_field["ID"] = child.value
+          current_form_field["ID"] = input_node.value
 
             break;
           case "description":
-          current_form_field["Description"] = child.value
+          current_form_field["Description"] = input_node.value
 
             break;
 
@@ -324,21 +421,40 @@ function submitForm(button: HTMLButtonElement){
   }
 
   // write as json and send on "form-construct-json"
+
+  console.log(response_object)
   let construct_string = JSON.stringify(response_object)
   sendCreateRequest(construct_string)
 }
 
-function sendCreateRequest(form: string){
-  var f = new formData()
+export function sendCreateRequest(form: string){
+  var f = new FormData()
   f.append("json" , "1")
   f.append("form-construct-json" , form )
 
   var x = new XMLHttpRequest()
   x.open("POST" , "/mod/create" , true)
-  x.load = handleCreateComplete
+  x.onload = handleCreateComplete
   x.send(f)
 }
 
-function handleCreateComplete(e) {
-  console.log(e)
+export function handleCreateComplete(e) {
+  let response_json = JSON.parse(e.originalTarget.responseText)
+  console.log(response_json , e.originalTarget.status)
+  if(response_json.error){
+    if(!response_json['error-list']){
+      document.getElementById("response-container").innerHTML = "Server error: " + response_json["error"]
+    }
+    let error_message =  "There are some issues preventing you from submitting...<br/><ul>"
+    response_json['error-list'].forEach((err) => {
+      error_message += "<li>" + err.FailPosition + " : " + err.FailType + "</li>"
+    });
+    error_message += "</ul>"
+    document.getElementById("response-container").innerHTML = error_message
+
+  } else{
+    document.getElementById("response-container").innerHTML = `Form was created...<br/>
+      URL: <a href="${response_json.URL}">${response_json.URL}</a>
+    `
+  }
 }

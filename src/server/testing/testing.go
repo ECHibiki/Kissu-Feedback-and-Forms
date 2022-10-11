@@ -269,7 +269,7 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir
   if err != nil{
     panic(err)
   }
-  err = tools.StoreFormToDB(db, insertable_form)
+  _ , err = tools.StoreFormToDB(db, insertable_form)
   if err != nil{
     panic(err)
   }
