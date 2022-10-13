@@ -40,7 +40,7 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB , stick *stick.Env ) 
  gin.SetMode( gin_mode )
 
  gin_engine := gin.Default()
- gin_engine.SetTrustedProxies([]string{"127.0.0.1"})
+ gin_engine.SetTrustedProxies([]string{"127.0.0.1" , "::1"})
 
  {
    gin_engine.Static( "/assets", globals.RootDirectory + "public" ) //
