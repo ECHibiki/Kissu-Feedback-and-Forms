@@ -1,3 +1,3 @@
-{{'{'}}"FormName":"{{form.FormName}}","ID":"{{form.ID}}","Description":"{{form.Description}}","AnonOption":{{form.AnonOption ? "true" : "false"}},"FormFields":[{% for field in form.FormFields %}{{'{'}}"Label":"{{ field.Label }}","ID":"{{field.ID}}","Description":"{{field.Description}}"{%endfor%},"SubGroup":{{field.SubGroup ? "not-correct" : "null"}}
+{{'{'}}"FormName":"{{form.FormName}}","ID":"{{form.ID}}","Description":"{{form.Description}}","AnonOption":{{form.AnonOption ? "true" : "false"}},"FormFields":[{% for field in form.FormFields %}{{'{'}}"Label":"{{ field.Label }}","ID":"{{field.ID}}","Description":"{{field.Description}}"{%endfor%},"SubGroups":{{field.SubGroups ? "not-correct" : "null"}}
 {{ form.FormFields[0].Respondables[0].GetType()  }}
 {{ form.FormFields[0].Respondables[0].Object.Field.Name }}

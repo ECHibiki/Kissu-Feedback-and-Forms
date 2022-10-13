@@ -607,14 +607,14 @@ func modPostCreateForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.Handle
         if ck_err == nil{
           err = destroyer.UndoDirectory(form_construct , globals.RootDirectory)
           if err != nil {
-            destroyer.UndoForm(db , insertable_form.Name)
+            destroyer.UndoForm(db , insertable_form.Name , globals.RootDirectory)
             c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Folder writing"} )
             return
           }
         }
         err = builder.CreateFormDirectory(form_construct , globals.RootDirectory)
         if err != nil {
-          destroyer.UndoForm(db , insertable_form.Name)
+          destroyer.UndoForm(db , insertable_form.Name , globals.RootDirectory)
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Folder writing"} )
           return
         }

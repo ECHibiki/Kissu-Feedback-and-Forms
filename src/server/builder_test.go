@@ -8,6 +8,7 @@ import (
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/builder"
+    "github.com/ECHibiki/Kissu-Feedback-and-Forms/former/destroyer"
     "github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
     prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
 )
@@ -188,7 +189,7 @@ func TestFormMake(t *testing.T){
   if insertable_form.UpdatedAt == 0{
     t.Fatal("Form construction did not set an updated time")
   }
-  last_index , err = builder.StoreForm(db, insertable_form)
+  last_index , err := builder.StoreForm(db, insertable_form)
   if err != nil{
     t.Fatal(err)
   }
@@ -1116,5 +1117,26 @@ func TestEditOfForm(t *testing.T){
 }
 
 func DirectoryVerification(t *testing.T){
-  CheckFormDirectoryExists()
+  var initialization_folder string = "../../test"
+  db, _ , _ := prebuilder.DoTestingIntializations(initialization_folder)
+  defer prebuilder.CleanupTestingInitializations(initialization_folder)
+  first_name := "Test form 1"
+  first_store := "Test_form_1"
+  prebuilder.DoFormInitialization(first_name , "a-simple-identifier" , db ,  initialization_folder)
+
+  f , _ := tools.GetFormOfID(db , int64(1))
+  var form_construct former.FormConstruct
+  json.Unmarshal([]byte(f.FieldJSON) , &form_construct)
+
+  ex_err := builder.CheckFormDirectoryExists(form_construct , initialization_folder)
+  if ex_err != nil{
+    t.Fatal("directory does not exist")
+  }
+
+  destroyer.UndoForm(db  , first_store, initialization_folder)
+  ex_err = builder.CheckFormDirectoryExists(form_construct , initialization_folder)
+  if ex_err == nil{
+    t.Fatal("directory should not exist")
+  }
+
 }

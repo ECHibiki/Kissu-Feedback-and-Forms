@@ -124,31 +124,25 @@ func CreateDownloadableForGivenForm(initialization_folder string , form_name str
   		return nil
 	})
   if err != nil {
-    fmt.Println("B" , err)
     return err
   }
 
 	// produce tar
 	if err := tw.Close(); err != nil {
-    fmt.Println("C" , err)
 		return err
 	}
 	// produce gzip
 	if err := zr.Close(); err != nil {
-    fmt.Println("D" , err)
 		return err
 	}
 
   compressed_file, err := os.OpenFile(file_path, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
 	if err != nil {
-    fmt.Println("E" , err)
 		return err
 	}
 	if _, err := io.Copy(compressed_file, &buf); err != nil {
-    fmt.Println("G", err)
 		return err
 	}
-  fmt.Println("H" , err)
   return nil
 }
 

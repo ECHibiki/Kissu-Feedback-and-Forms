@@ -106,15 +106,9 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
 
     csv_list = append(csv_list , field_list)
 
-    fmt.Println(fields)
-    fmt.Println(field_map)
-    fmt.Println(field_list)
-    fmt.Println(csv_list)
 
     responses, err := GetRepliesToForm(db , id)
     for _ , r := range responses {
-      asdf , _ := json.Marshal(r)
-      fmt.Println(string(asdf))
 
       responses_list := make([]string , len(fields) + 2)
       responses_list[field_map["Identifier"]] =  r.Identifier
@@ -125,7 +119,6 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
         return err
       }
       for k , v := range response {
-        fmt.Println(k , v)
         responses_list[field_map[k]] = v
       }
       csv_list = append(csv_list , responses_list)

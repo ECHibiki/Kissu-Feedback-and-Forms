@@ -2,5 +2,5 @@ package globals
 
 const (
  RootDirectory = "./"
- ProjectVersion = "0.1.0"
+ ProjectVersion = "0.2.0"
 )

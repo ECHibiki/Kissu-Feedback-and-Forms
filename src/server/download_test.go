@@ -57,7 +57,7 @@ func TestCompressionOfGivenForm(t *testing.T){
   if err != nil {
     t.Fatal(err)
   }
-  _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/" + second_store + "-downloadable.tar.gz")
+  _ , err = os.Stat(initialization_folder + "/data/" + second_store + "/" + "downloadable.tar.gz")
   if err != nil {
     t.Fatal(err)
   }

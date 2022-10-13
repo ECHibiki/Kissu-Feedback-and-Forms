@@ -132,7 +132,7 @@ export function createNewSubgroup( button: HTMLButtonElement): string{
   let container = document.createElement('DIV');
   container.className =  "subgroup form-group"
   container.id =  group_id + "-group"
-  container.setAttribute("style" , "border:1px solid black;")
+  container.setAttribute("style" , "")
   container.innerHTML = `<LABEL>Group Label : <INPUT type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
   <LABEL>Group ID : <INPUT type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
   <LABEL>Form Descriptor : <INPUT type="text" name="description" id="${group_id}-description"/></LABEL> <br/>
@@ -154,7 +154,7 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
   let container = document.createElement('DIV');
   container.className =  "creation-prompt"
   container.id =  res_id + "-fields"
-  container.setAttribute("style", "border:1px solid black;width:400px;min-height:200px")
+  container.setAttribute("style", "width:400px;min-height:200px")
   container.innerHTML = `Element Creation Info:<BR/>
     <UL>
       <LI>Item Type:
@@ -184,10 +184,10 @@ export function deleteContainer(base_container_id:string , sub_container_id:stri
 export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement): string{
   let field_id = "field" + base_id
   let ta_id = "text-area" + (Date.now() + Math.random())
-  container.className =  "field-container"
+  container.className =  "respondable-group"
   container.id = ta_id
   container.setAttribute("data-type", "textarea")
-  container.setAttribute("style" ,"border:1px solid black;width:400px;min-height:200px")
+  container.setAttribute("style" ,"width:400px;min-height:200px")
   container.innerHTML = `TextArea Creation Info:<BR/>
     <UL>
       <LI>
@@ -213,7 +213,7 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
   container.className =  "field-container"
   container.id =  select_id
   container.setAttribute("data-type", "selectiongroup")
-  container.setAttribute("style", "border:1px solid black;width:400px;min-height:200px")
+  container.setAttribute("style", "width:400px;min-height:200px")
   container.innerHTML = `TextArea Creation Info:<BR/>
     <UL>
       <LI>

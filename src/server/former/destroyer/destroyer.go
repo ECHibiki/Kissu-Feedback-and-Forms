@@ -14,12 +14,12 @@ func DeleteForm(db *sql.DB , form_name string, form_num int64) error{
   }
   return err
 }
-func UndoForm(db *sql.DB , form_name string) error{
+func UndoForm(db *sql.DB , form_name string, root_dir string) error{
   _ , err := db.Exec("DELETE FROM forms WHERE name = ?", form_name )
-  // The form folder will linger
   if err != nil{
     return err
   }
+  err = os.RemoveAll(root_dir + "/data/" + form_name + "/")
   return err
 }
 
