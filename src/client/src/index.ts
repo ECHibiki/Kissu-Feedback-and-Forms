@@ -583,8 +583,8 @@ export function postDeleteForm(name: string , number:string){
       }
     }
     x.send()
-    return false;
   }
+  return false;
 }
 export function postDeleteResponse(form_name: string , response_number:string){
   let conf = confirm('This will remove the response and all information associated with it')
@@ -609,6 +609,6 @@ export function postDeleteResponse(form_name: string , response_number:string){
       }
     }
     x.send()
-    return false;
   }
+  return false;
 }
