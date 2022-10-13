@@ -71,7 +71,7 @@ func TestFormMake(t *testing.T){
           Label:"test-group1",
           ID: "test-group1",
           Description: "Groups and subgroups may have a description, when set it does not need respondables",
-          // SubGroup: []former.FormGroup{},
+          // SubGroups: []former.FormGroup{},
           Respondables:[]former.UnmarshalerFormObject{
               {
                 Type: former.TextAreaTag ,
@@ -260,7 +260,7 @@ func TestNonUniqueFormNameProducesErrorInValidationStep(t *testing.T){
           Label:"test-group1",
           ID: "test-group1",
           Description: "Groups and subgroups may have a description, when set it does not need respondables",
-          // SubGroup: []former.FormGroup{},
+          // SubGroups: []former.FormGroup{},
           Respondables:[]former.UnmarshalerFormObject{
               {
                 Type: former.TextAreaTag ,
@@ -424,7 +424,7 @@ func TestInvalidStructureForms(t *testing.T){
               } ,
           },
        },
-        SubGroup: []former.FormGroup{
+        SubGroups: []former.FormGroup{
           {
             Label:"test-subgroup1",
             ID: "test-subgroup1",
@@ -450,13 +450,13 @@ func TestInvalidStructureForms(t *testing.T){
        Label:"test-formgroup-Fail1",
        ID:first_failing_id,
        Respondables:[]former.UnmarshalerFormObject{        },
-       SubGroup: []former.FormGroup{
+       SubGroups: []former.FormGroup{
          {
            // Also Fail here because no respondables
            Label:"test-subgroup-Fail",
            ID:second_failing_id,
            Respondables:[]former.UnmarshalerFormObject{        },
-           SubGroup: []former.FormGroup{   },
+           SubGroups: []former.FormGroup{   },
          },
        },
      },
@@ -553,7 +553,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
         Label:"Forms with no entries can exist if they have a description, though this could allow for functionless forms there could be some uses...",
         ID:duplicate_id_A,
         Description: "A description lets a field get away with no items",
-        SubGroup: []former.FormGroup{
+        SubGroups: []former.FormGroup{
           {
             // This should pass because they have a description
            Label:"...",
@@ -579,7 +579,7 @@ func TestDuplicateIDNameFailure(t *testing.T){
        Label:"...",
        ID:"safe-id",
        Description: "A bit more isolated",
-       SubGroup: []former.FormGroup{
+       SubGroups: []former.FormGroup{
          {
            // This should pass because they have a description
           Label:"...",
@@ -765,7 +765,7 @@ func TestInvalidCharIDNameFailure(t *testing.T){
             } ,
           },
         },
-        SubGroup: []former.FormGroup{
+        SubGroups: []former.FormGroup{
           {
             // This should pass because they have a description
            Label:"...",
@@ -950,7 +950,7 @@ func TestConstructionOfCheckboxSelectGroup(t *testing.T){
             },
           },
         },
-        SubGroup: []former.FormGroup{ },
+        SubGroups: []former.FormGroup{ },
       },
     },
   }
@@ -1011,7 +1011,7 @@ func TestEditOfForm(t *testing.T){
           Label:"test-group1",
           ID: "test-group1",
           Description: "Groups and subgroups may have a description, when set it does not need respondables",
-          // SubGroup: []former.FormGroup{},
+          // SubGroups: []former.FormGroup{},
           Respondables:[]former.UnmarshalerFormObject{
               {
                 Type: former.TextAreaTag ,
@@ -1113,4 +1113,8 @@ func TestEditOfForm(t *testing.T){
     t.Fatal("Marshaling process removed data")
   }
 
+}
+
+func DirectoryVerification(t *testing.T){
+  CheckFormDirectoryExists()
 }

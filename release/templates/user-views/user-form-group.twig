@@ -15,7 +15,12 @@
       <DIV id="{{respondable.Object.Field.Name}}">
         <P>{{respondable.Object.Field.Label}}</P>
         {% for check in respondable.Object.CheckableItems %}
-          <LABEL>{{ check.Label }}<INPUT type="{{ respondable.Object.GetCategory() }}" data-required="{{ respondable.Object.Field.Required ? "true" : "false" }}" name="{{respondable.Object.Field.Name}}{% if respondable.Object.GetCategory() == "checkbox" %}-{{ loop.index }}{% endif %}" value="{{check.Value}}" /></LABEL>
+          {% set chkname = respondable.Object.Field.Name ~ ((respondable.Object.GetCategory() == "checkbox") ? ("-" ~ loop.index) : "" ) %}
+          <LABEL>{{ check.Label }}<INPUT
+            type="{{ respondable.Object.GetCategory() }}"
+            data-required="{{ respondable.Object.Field.Required ? "true" : "false" }}"
+            name="{{ chkname }}" value="{{check.Value}}"
+          /></LABEL>
         {% endfor %}
       </DIV>
     {% elseif respondable.GetType() == "optiongroup" %}

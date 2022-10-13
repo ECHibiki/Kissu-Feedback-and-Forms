@@ -229,7 +229,7 @@ type FormGroup struct {
   Label string
   ID string
   Description string
-  SubGroup []FormGroup
+  SubGroups []FormGroup
   Respondables []UnmarshalerFormObject
 }
 

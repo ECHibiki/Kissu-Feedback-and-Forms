@@ -86,17 +86,17 @@ func WriteFilesFromMultipart(root_dir string , response_struct former.FormRespon
 
 // borrowing from https://gist.github.com/mimoo/25fc9716e0f1353791f5908f94d6e726
 func CreateDownloadableForGivenForm(initialization_folder string , form_name string) error{
-  form_dir := initialization_folder + "/data/" + form_name
-  file_path := initialization_folder + "/data/" + form_name + "/" + form_name + "-downloadable.tar.gz"
+  form_dir := initialization_folder + "/data/" + form_name + "/"
+  file_path := initialization_folder + "/data/" + form_name + "/downloadable.tar.gz"
 
-  err  := os.Remove(file_path)
+  os.Remove(file_path)
 
   var buf bytes.Buffer
   zr := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(zr)
 
 	// walk through every file in the folder
-	err = filepath.Walk(form_dir, func(file string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(form_dir, func(file string, fi os.FileInfo, err error) error {
   		// generate tar header
   		header, err := tar.FileInfoHeader(fi, file)
   		if err != nil {
@@ -124,25 +124,31 @@ func CreateDownloadableForGivenForm(initialization_folder string , form_name str
   		return nil
 	})
   if err != nil {
+    fmt.Println("B" , err)
     return err
   }
 
 	// produce tar
 	if err := tw.Close(); err != nil {
+    fmt.Println("C" , err)
 		return err
 	}
 	// produce gzip
 	if err := zr.Close(); err != nil {
+    fmt.Println("D" , err)
 		return err
 	}
 
-  compressed_file, err := os.OpenFile(initialization_folder+ "/data/" + form_name + "/downloadable.tar.gz", os.O_CREATE|os.O_RDWR, os.FileMode(644))
+  compressed_file, err := os.OpenFile(file_path, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
 	if err != nil {
+    fmt.Println("E" , err)
 		return err
 	}
 	if _, err := io.Copy(compressed_file, &buf); err != nil {
+    fmt.Println("G", err)
 		return err
 	}
+  fmt.Println("H" , err)
   return nil
 }
 

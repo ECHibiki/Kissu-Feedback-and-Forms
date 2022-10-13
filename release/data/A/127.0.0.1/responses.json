@@ -1,7 +1,11 @@
 {
  "FormName": "A",
- "RelationalID": 1,
+ "RelationalID": 10,
  "ResponderID": "127.0.0.1",
- "Responses": null,
+ "Responses": {
+  "G": "asdasd",
+  "J-1": "M",
+  "J-2": "Y"
+ },
  "FilePaths": {}
 }

@@ -41,6 +41,12 @@ func CreateFormDirectory(form former.FormConstruct , root_dir string) error{
   return nil
 }
 
+func CheckFormDirectoryExists(form former.FormConstruct , root_dir string) error{
+  safe_name := form.StorageName()
+  _ , err := os.Stat(root_dir + "/data/" + safe_name + "/"  )
+  return err
+}
+
 func checkNameUnique(db *sql.DB ,  form former.FormConstruct ) (error_list former.FailureObject){
   row  := db.QueryRow("SELECT * FROM forms WHERE name = ?" , form.StorageName())
   var db_field types.FormDBFields
@@ -100,9 +106,9 @@ func checkValidFormStructure(form former.FormConstruct) (error_list []former.Fai
       error_list = append(error_list , former.FailureObject{ former.GroupMissingMessage , former.GroupMissingCode, fail_location } )
     }
     // verify it has validity to it
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
   return error_list
@@ -152,9 +158,9 @@ func checkNameAndIDUniqueness(form former.FormConstruct) (error_list []former.Fa
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 
@@ -179,9 +185,9 @@ func checkNameAndIDPropperCharacters(form former.FormConstruct) (error_list []fo
         names = append( names , name )
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 

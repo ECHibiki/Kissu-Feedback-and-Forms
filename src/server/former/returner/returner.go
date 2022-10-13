@@ -79,7 +79,7 @@ func GetRepliesToForm(db *sql.DB , id int64)  (parsed_row_list []types.ResponseD
 }
 
 func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folder string) error{
-    form_data , err := tools.GetFormOfID(db , 2)
+    form_data , err := tools.GetFormOfID(db , id)
     if err != nil {
       return err
     }
@@ -90,18 +90,32 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
     }
     var csv_list [][]string
     var field_list []string
-    field_list = append(field_list , "Identifier")
-    fields := GetFieldsOfFormConstruct(form_construct)
-    field_list = append(field_list , "SubmittedAt")
     var field_map map[string]int = make(map[string]int)
+
+    field_list = append(field_list , "Identifier")
+    field_map["Identifier"] = 0
+
+    fields := GetFieldsOfFormConstruct(form_construct)
     for i , field := range fields {
-      field_map[field.GetName()] = i
+      field_map[field.GetName()] = i + 1
+      field_list = append(field_list , field.GetName())
     }
+
+    field_list = append(field_list , "SubmittedAt")
+    field_map["SubmittedAt"] = len(fields) + 1
+
     csv_list = append(csv_list , field_list)
 
+    fmt.Println(fields)
+    fmt.Println(field_map)
+    fmt.Println(field_list)
+    fmt.Println(csv_list)
 
-    responses, err := GetRepliesToForm(db , 2)
+    responses, err := GetRepliesToForm(db , id)
     for _ , r := range responses {
+      asdf , _ := json.Marshal(r)
+      fmt.Println(string(asdf))
+
       responses_list := make([]string , len(fields) + 2)
       responses_list[field_map["Identifier"]] =  r.Identifier
       responses_list[field_map["SubmittedAt"]] = strconv.Itoa(int(r.SubmittedAt))
@@ -110,8 +124,9 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
       if err != nil {
         return err
       }
-      for _ , v := range response {
-        responses_list[field_map[v]] = v
+      for k , v := range response {
+        fmt.Println(k , v)
+        responses_list[field_map[k]] = v
       }
       csv_list = append(csv_list , responses_list)
     }
@@ -120,7 +135,7 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
 }
 
 func CreateReadmeForGivenForm(db *sql.DB , id int64 , initialization_folder string) error{
-  form_data , err := tools.GetFormOfID(db , 2)
+  form_data , err := tools.GetFormOfID(db , id)
   if err != nil {
     return err
   }
@@ -169,9 +184,9 @@ func GetFieldsOfFormConstruct(form former.FormConstruct) (field_list []former.Fo
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
   return

@@ -25,18 +25,108 @@ export function helloWorld() {
   console.log("hello client");
 }
 
-export function attatchCreators(){
+export function attatchCreators(settings:any){
+  console.log(settings)
   let root_group_button = document.getElementById("sub-create")
   root_group_button.onclick = () => createNewSubgroup(root_group_button as HTMLButtonElement)
 
   let submit_button = document.getElementById("form-submit-button")
-  submit_button.onclick = () =>  submitForm(submit_button  as HTMLButtonElement )
+  if(submit_button) {
+    submit_button.onclick = () =>  submitForm(submit_button as HTMLButtonElement , "/mod/create" )
+  }
+
+  let edit_button = document.getElementById("form-edit-button")
+  if (edit_button){
+    edit_button.onclick = () =>  submitForm(edit_button as HTMLButtonElement , "/mod/edit/" + settings.form_number)
+  }
 }
 
-export function createNewSubgroup( button: HTMLButtonElement){
+export function rebuildFromRaw(raw_json:string){
+  try {
+    let form_construct = JSON.parse(raw_json)
+    let field_structure = { SubGroups: form_construct.FormFields }
+    console.log("FC", field_structure)
+    let reference_button = document.getElementById("sub-create");
+    recursiveFormFieldRebuild(field_structure , <HTMLButtonElement>reference_button)
+  } catch (error) {
+    console.error(error)
+    alert("Issue with rebuilding")
+  }
+}
+
+function recursiveFormFieldRebuild(field_group:any , base_button:HTMLButtonElement){
+  console.log(field_group , base_button)
+  if(!field_group){
+    return
+  }
+
+  let respondables = field_group.Respondables
+  console.log("RES", respondables)
+  if(respondables){
+    respondables.forEach(field => {
+      console.log(field)
+      let respondable_creation_object = createNewResponseElement(base_button)
+      let field_id = ""
+      switch (field.Type) {
+        case "textarea":
+          field_id = createTextAreaInputs(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id ,respondable_creation_object.container);
+          (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
+          (<HTMLInputElement>document.getElementById(field_id + "-label")).value = field.Object.Field.Label;
+          (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
+          (<HTMLInputElement>document.getElementById(field_id + "-placeholder")).value = field.Object.Placeholder;
+          break;
+        case "selectiongroup":
+          field_id = createSelectGroup(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id , respondable_creation_object.container);
+          (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
+          (<HTMLInputElement>document.getElementById(field_id + "-label")).value = field.Object.Field.Label;
+          (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
+
+          for(let check_count = 1 ; check_count < field.Object.CheckableItems.length ; check_count++ ){
+             addCheckable( <HTMLButtonElement>document.getElementById(field_id) )
+          }
+          field.Object.CheckableItems.forEach((check , index) => {
+            (<HTMLInputElement>document.getElementById(field_id + "-checkable-label-" + index)).value = check.Label;
+            (<HTMLInputElement>document.getElementById(field_id + "-checkable-value-" + index)).value = check.Value;
+          });
+
+          break;
+        default:
+          break;
+      }
+    });
+  }
+  setFieldsAsDisabled(true)
+
+  let group_structures = field_group.SubGroups
+  console.log("GS" , group_structures)
+  if(group_structures){
+    group_structures.forEach(structure => {
+      let button_ref = createNewSubgroup(base_button);
+      (<HTMLInputElement>document.getElementById(button_ref + "-label")).value = structure.Label;
+      (<HTMLInputElement>document.getElementById(button_ref + "-id")).value = structure.ID;
+      (<HTMLInputElement>document.getElementById(button_ref + "-description")).value = structure.Description;
+
+      let reference_button = document.getElementById(button_ref);
+      recursiveFormFieldRebuild(structure , <HTMLButtonElement>reference_button)
+    });
+  }
+}
+
+export function setFieldsAsDisabled(disable_state:boolean){
+  let buttons = Array.from(document.getElementsByTagName("BUTTON"))
+  let inputs = Array.from(document.getElementsByTagName("INPUT"))
+  let selects = Array.from(document.getElementsByTagName("SELECT"))
+  let disablables = [].concat(buttons, inputs, selects)
+  for( let i = 0 ; i < disablables.length ; i++){
+    disable_state ? disablables[i].setAttribute("disabled" , "" + disable_state) : disablables[i].removeAttribute("disabled");
+  }
+}
+
+
+export function createNewSubgroup( button: HTMLButtonElement): string{
   let parent_id = button.getAttribute("data-link-id")
   let parent_container =  document.getElementById(parent_id + "-group")
-  console.log(parent_id , parent_container)
+  console.log(parent_id , parent_container , button)
 
   let group_id = "group" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
@@ -46,15 +136,16 @@ export function createNewSubgroup( button: HTMLButtonElement){
   container.innerHTML = `<LABEL>Group Label : <INPUT type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
   <LABEL>Group ID : <INPUT type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
   <LABEL>Form Descriptor : <INPUT type="text" name="description" id="${group_id}-description"/></LABEL> <br/>
-  <BUTTON  onclick="FormLibrary.createNewResponseElement(this)" data-link-id="${group_id}" >Create New Respondable Below Last Respondable</BUTTON><br/>
+  <BUTTON id="${group_id}" onclick="FormLibrary.createNewResponseElement(this)" data-link-id="${group_id}" >Create New Respondable Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.createNewSubgroup(this)" data-link-id="${group_id}">Create New Group Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.deleteContainer('${parent_id + "-group"}' , '${ group_id + "-group"}')">Delete Subgroup</BUTTON><br/>
   <SPAN  class="respondable-container" id="${group_id}-respondables"></SPAN><BR/>
   `
   parent_container.appendChild(container)
+  return group_id
 }
 
-export function createNewResponseElement(button: HTMLButtonElement ){
+export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:string, respondable_container_id:string, container:HTMLDivElement }){
   let parent_id = button.getAttribute("data-link-id")
   let respondable_container =  document.getElementById(parent_id + "-respondables")
   console.log(parent_id , respondable_container)
@@ -76,20 +167,21 @@ export function createNewResponseElement(button: HTMLButtonElement ){
         </SELECT>
       </LI>
       <LI>If we want any of the unimplemented features, then you'll have to ask me or wait until I personally require it</LI>
-      <LI><BUTTON data-link-id="${res_id}" onclick="FormLibrary.responseTypeSelected('${parent_id + "-respondables"}' , this)">Next</BUTTON></LI>
+      <LI><BUTTON id="${res_id}" data-link-id="${res_id}" onclick="FormLibrary.responseTypeSelected('${parent_id + "-respondables"}' , this)">Next</BUTTON></LI>
       <LI><BUTTON  data-link-id="${res_id}" onclick="FormLibrary.deleteContainer('${parent_id + "-respondables"}' , '${res_id + "-fields"}')">Delete</BUTTON></LI>
     </UL>`
 
     // CREATE NEW AT END
     // INSERT IN POSITION
     respondable_container.appendChild(container)
+    return { base_id: res_id, respondable_container_id: parent_id + "-respondables" , container: <HTMLDivElement>container  }
 }
 
 export function deleteContainer(base_container_id:string , sub_container_id:string){
   document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));
 }
 
-export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement){
+export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement): string{
   let field_id = "field" + base_id
   let ta_id = "text-area" + (Date.now() + Math.random())
   container.className =  "field-container"
@@ -110,11 +202,12 @@ export function createTextAreaInputs(base_id:string, respondable_container_id: s
       <LI>
         Placeholder : <INPUT  data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
       </LI>
-      <LI><BUTTON onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${ta_id}')">Delete</BUTTON></LI>
+      <LI><BUTTON id="${ta_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${ta_id}')">Delete</BUTTON></LI>
     </UL>`;
+    return field_id
 }
 
-export function createSelectGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement){
+export function createSelectGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement): string{
   let field_id = "field" + (Date.now() + Math.random())
   let select_id = "select" + (Date.now() + Math.random())
   container.className =  "field-container"
@@ -140,7 +233,7 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
       </LI>
       <LI>
         Group Items :
-        <BUTTON onclick="FormLibrary.addCheckable(this)" data-link-id="${field_id}">+</BUTTON>
+        <BUTTON id="${field_id}" onclick="FormLibrary.addCheckable(this)" data-link-id="${field_id}">+</BUTTON>
         <BUTTON onclick="FormLibrary.removeCheckable(this)" data-link-id="${field_id}">-</BUTTON><BR/>
         <OL data-field="1" data-select="1" id="${field_id}-checkable">
           <LI>
@@ -149,8 +242,9 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
           </LI>
         </OL>
       </LI>
-      <LI><BUTTON onclick="FormLibrary.deleteContainer('${respondable_container_id}" , '${select_id}")">Delete</BUTTON></LI>
+      <LI><BUTTON id="${select_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}" , '${select_id}")">Delete</BUTTON></LI>
     </UL>`;
+    return field_id
 }
 
 export function addCheckable(button : HTMLButtonElement) {
@@ -160,7 +254,7 @@ export function addCheckable(button : HTMLButtonElement) {
   let child_count = ol.children.length
   li.innerHTML = `
     <INPUT placeholder="Label" data-checkable-no="${child_count}" data-field="1" name='Label' id="${parent_id}-checkable-label-${child_count}"/>
-    <INPUT placeholder="Value" data-checkable-no="${child_count}" data-field="1" name='Value' id="${parent_id}-checkable-name-${child_count}"/>
+    <INPUT placeholder="Value" data-checkable-no="${child_count}" data-field="1" name='Value' id="${parent_id}-checkable-value-${child_count}"/>
   `
   ol.appendChild(li)
 }
@@ -227,7 +321,7 @@ type FormConstruct struct {
   }
 */
 
-export function submitForm(button: HTMLButtonElement){
+export function submitForm(button: HTMLButtonElement , post_url){
   let response_object = {
     FormName: "",
     ID: "",
@@ -424,22 +518,28 @@ export function submitForm(button: HTMLButtonElement){
 
   console.log(response_object)
   let construct_string = JSON.stringify(response_object)
-  sendCreateRequest(construct_string)
+  sendCreateRequest(construct_string , post_url)
 }
 
-export function sendCreateRequest(form: string){
+export function sendCreateRequest(form: string , url:string){
   var f = new FormData()
   f.append("json" , "1")
   f.append("form-construct-json" , form )
 
   var x = new XMLHttpRequest()
-  x.open("POST" , "/mod/create" , true)
+  x.open("POST" , url , true)
   x.onload = handleCreateComplete
   x.send(f)
 }
 
 export function handleCreateComplete(e) {
-  let response_json = JSON.parse(e.originalTarget.responseText)
+  let response_json:any = {}
+  try {
+    response_json = JSON.parse(e.originalTarget.responseText)
+  } catch (error) {
+    document.getElementById("response-container").innerHTML = `Hard server crash`
+    return
+  }
   console.log(response_json , e.originalTarget.status)
   if(response_json.error){
     if(!response_json['error-list']){
@@ -453,8 +553,62 @@ export function handleCreateComplete(e) {
     document.getElementById("response-container").innerHTML = error_message
 
   } else{
-    document.getElementById("response-container").innerHTML = `Form was created...<br/>
+    document.getElementById("response-container").innerHTML = `${response_json.message}...<br/>
       URL: <a href="${response_json.URL}">${response_json.URL}</a>
     `
+  }
+}
+
+export function postDeleteForm(name: string , number:string){
+  let conf = confirm('This will remove the form from the display and database.\n\
+    Information files will retained on the server as a record until a duplicate named form is created')
+  if (conf == true){
+    let x = new XMLHttpRequest()
+    x.open("POST" , `/mod/form/delete/${name}/${number}`)
+    x.onload = (e:any) => {
+      let response_json:any = {}
+      try {
+        response_json = JSON.parse(e.originalTarget.responseText)
+      } catch (error) {
+        alert("Error: Hard server crash")
+        return
+      }
+      if(response_json.error){
+        alert("Error: " + response_json.error)
+      } else{
+        alert("Success: " + response_json.message)
+        let li = document.getElementById(`row-${name}-${number}`)
+        //this is fine... there is nothing else that an LI can be contained by
+        li.parentNode.removeChild(li)
+      }
+    }
+    x.send()
+    return false;
+  }
+}
+export function postDeleteResponse(form_name: string , response_number:string){
+  let conf = confirm('This will remove the response and all information associated with it')
+  if (conf == true){
+    let x = new XMLHttpRequest()
+    x.open("POST" , `/mod/response/delete/${form_name}/${response_number}`)
+    x.onload = (e:any) => {
+      let response_json:any = {}
+      try {
+        response_json = JSON.parse(e.originalTarget.responseText)
+      } catch (error) {
+        alert("Error: Hard server crash")
+        return
+      }
+      if(response_json.error){
+        alert("Error: " + response_json.error)
+      } else{
+        alert("Success: " + response_json.message)
+        let li = document.getElementById(`row-${form_name}-${response_number}`)
+        //this is fine... there is nothing else that an LI can be contained by
+        li.parentNode.removeChild(li)
+      }
+    }
+    x.send()
+    return false;
   }
 }

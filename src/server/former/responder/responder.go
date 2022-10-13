@@ -86,9 +86,9 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 
@@ -119,9 +119,9 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 
@@ -225,9 +225,9 @@ func validateRequiredFileFields(file_tags map[string]former.MultipartFile , form
           }
         }
       }
-      if len(item.SubGroup) != 0 {
+      if len(item.SubGroups) != 0 {
         // add children to the stack
-        subgroup_stack = append(subgroup_stack , item.SubGroup...)
+        subgroup_stack = append(subgroup_stack , item.SubGroups...)
       }
     }
   return
@@ -248,9 +248,9 @@ func validateResponseFileFields(file_tags map[string]former.MultipartFile , form
         field_list[name] = respondable
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 
@@ -340,9 +340,9 @@ func FillMapWithPostParams(c *gin.Context , resp_map map[string]string , form fo
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
   fmt.Println(resp_map)
@@ -369,9 +369,9 @@ func FillMapWithPostFiles(c *gin.Context , file_map map[string]former.MultipartF
         }
       }
     }
-    if len(item.SubGroup) != 0 {
+    if len(item.SubGroups) != 0 {
       // add children to the stack
-      subgroup_stack = append(subgroup_stack , item.SubGroup...)
+      subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
 }

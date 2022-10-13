@@ -1,0 +1,43 @@
+<DIV id="{{ field.ID }}">
+  <STRONG>{{ field.Label }}</STRONG><br/>
+  <P>{{ field.Description }}</P>
+  {% for respondable in field.Respondables %}
+    {% if respondable.GetType() == "textarea" %}
+      {% if respondable.Object.Field.Label != "" %} <LABEL> {{respondable.Object.Field.Label}}:<br/> {% endif %}
+      <TEXTAREA disabled="true" name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}">
+{{ reply[respondable.Object.Field.Name] }}
+      </TEXTAREA> </LABEL>
+    {% elseif respondable.GetType() == "genericinput" %}
+      {% if respondable.Object.Field.Label != "" %} <LABEL> {{respondable.Object.Field.Label}}:<br/> {% endif %}
+      <INPUT  disabled="true" name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.GetType()}}" /> </LABEL>
+    {% elseif respondable.GetType() == "fileinput" %}
+      {% if respondable.Object.Field.Label != "" %} <LABEL> {{respondable.Object.Field.Label}}:<br/> {% endif %}
+      <INPUT  disabled="true" name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" type="file" data-allowed-regex="{{ respondable.Object.AllowedExtRegex }}"  data-max-size="{{ respondable.Object.MaxSize }}" /> </LABEL>
+    {% elseif respondable.GetType() == "selectiongroup" %}
+      <DIV id="{{respondable.Object.Field.Name}}">
+        <P>{{respondable.Object.Field.Label}}</P>
+        {% for check in respondable.Object.CheckableItems %}
+          {% set chkname = respondable.Object.Field.Name ~ ((respondable.Object.GetCategory() == "checkbox") ? ("-" ~ loop.index) : "" ) %}
+          <LABEL>{{ check.Label }}<INPUT disabled="true" type="{{ respondable.Object.GetCategory() }}" data-required="{{ respondable.Object.Field.Required ? "true" : "false" }}"
+            name="{{respondable.Object.Field.Name}}{% if respondable.Object.GetCategory() == "checkbox" %}-{{ loop.index }}{% endif %}"
+            value="{{check.Value}}"
+            checked="{{ reply[chkname] ? "true" : false }}"
+          /></LABEL>
+        {% endfor %}
+      </DIV>
+    {% elseif respondable.GetType() == "optiongroup" %}
+      {% if respondable.Object.Field.Label != "" %} <LABEL> {{respondable.Object.Field.Label}}:<br/> {% endif %}
+        <SELECT name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" >
+          {% for opt in respondable.Options %}
+            <OPTION value="{{opt.Value}}">{{ opt.Value }}</OPTION>
+          {% endfor %}
+        </SELECT>
+      </LABEL>
+    {% endif %}
+    </br>
+  {% endfor %}
+
+  {% for group in field.FormFields %}
+    {% include 'user-views/user-form-group.twig' with {'field':group} %}
+  {% endfor %}
+</DIV>

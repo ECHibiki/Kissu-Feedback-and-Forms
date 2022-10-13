@@ -127,3 +127,10 @@ func TestDeleteOfResponse(t * testing.T){
   }
 
 }
+
+func UndoTest(t *testing.T){
+  destroyer.UndoForm()
+}
+func DirectoryUndoTest(t *testing.T){
+  destroyer.UndoDirectory()
+}

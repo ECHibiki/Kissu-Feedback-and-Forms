@@ -68,10 +68,13 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB , stick *stick.Env ) 
      mod_group.POST("/create", modPostCreateForm( db , cfg )) //
      // edit a form
      mod_group.GET("/edit/:formnum", modServeEditForm( db  , stick ))
-     mod_group.POST("/edit/:formnum", modPostEditForm( db ))
+     mod_group.POST("/edit/:formnum", modPostEditForm( db ,  cfg ))
      // delete forms
-     mod_group.POST("/delete-form/", modPostDeleteForm( db ))
-     mod_group.POST("/delete-response/", modPostDeleteResponse( db ))
+     mod_group.POST("/form/delete/:formname/:formnum", modPostDeleteForm( db ))
+     mod_group.POST("response/delete/:formname/:respnum", modPostDeleteResponse( db ))
+
+     mod_group.GET("/form/delete/:formname/:formnum", modServeDelete( ))
+     mod_group.GET("response/delete/:formname/:respnum", modServeDelete( ))
      // view all forms
      mod_group.GET("/view/", modServeViewAllForms(db  , stick))
      // view a form with responses
@@ -179,13 +182,16 @@ func modServeEditForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Invalid Unmarshaling of form"} )
       return
     }
-    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-edit.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct })
+    fmt.Println(form_data.FieldJSON)
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-edit.twig" , map[string]stick.Value{
+      "version" : globals.ProjectVersion , "id": form_data.ID , "form" : form_construct , "form_str" : form_data.FieldJSON,
+    })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
       return
     }
-    serveTwigTemplate(c , http.StatusInternalServerError , template)
+    serveTwigTemplate(c , http.StatusOK , template)
   }
   // Display the form builder and JS to get it to work
 }
@@ -205,7 +211,8 @@ func modServeViewAllForms(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
       return
     }
-    serveTwigTemplate(c , http.StatusInternalServerError , template)
+    fmt.Println(form_data_list)
+    serveTwigTemplate(c , http.StatusOK , template)
   }
   // view form list
 }
@@ -227,6 +234,7 @@ func modServeViewSingleForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
         c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Issue parsing a reply"} )
         return
       }
+      fmt.Println(r_map)
       r_map["ID"] = strconv.Itoa(int(r.ID))
       r_map["FK_ID"] = strconv.Itoa(int(r.FK_ID))
       r_map["Identifier"] = r.Identifier
@@ -238,6 +246,7 @@ func modServeViewSingleForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Can't get form replies"} )
       return
     }
+    fmt.Println(reply_list)
     template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "replies": reply_list })
     if err != nil{
       fmt.Println(err)
@@ -285,7 +294,7 @@ func modServeViewSingleResponse(db *sql.DB , env *stick.Env) gin.HandlerFunc {
     reply_construct["Identifier"] = reply_data.Identifier
     reply_construct["SubmittedAt"] = strconv.Itoa(int(reply_data.SubmittedAt))
 
-    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "reply": reply_construct })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-singular-reply.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "reply": reply_construct })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -307,12 +316,27 @@ func modServeDownloadForm(db *sql.DB) gin.HandlerFunc {
     }
     form_name := c.Param("formname")
 
-    returner.CreateInstancedCSVForGivenForm(db , int64(form_num) , globals.RootDirectory)
-    returner.CreateReadmeForGivenForm(db , int64(form_num) , globals.RootDirectory)
+    err = returner.CreateInstancedCSVForGivenForm(db , int64(form_num) , globals.RootDirectory)
+    if err != nil{
+      fmt.Println("CSV" , err)
+      c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Issue parsing a form"} )
+      return
+    }
+    err = returner.CreateReadmeForGivenForm(db , int64(form_num) , globals.RootDirectory)
+    if err != nil{
+      fmt.Println("README" , err)
+      c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Issue parsing a form"} )
+      return
+    }
     // A tar.gz file containing the CSV, as it has zipped the entire form directory together
-    tools.CreateDownloadableForGivenForm(globals.RootDirectory , form_name )
-
-    c.Redirect(http.StatusMovedPermanently, "/mod/download/" + form_name +"/downloadable.tar.gz")
+    err = tools.CreateDownloadableForGivenForm(globals.RootDirectory , form_name )
+    if err != nil{
+      fmt.Println("TAR" , err)
+      c.AbortWithStatusJSON( http.StatusInternalServerError ,  gin.H{"Error": "Issue parsing a form"} )
+      return
+    }
+    fmt.Println(err , "redirect")
+    c.Redirect(http.StatusFound, "/mod/download/" + form_name + "/downloadable.tar.gz")
   }
   // "file is being generated"
   // On click, generate file then redirect into  /mod/download/FORMNAME/downloadable.tar.gz which will serve the file
@@ -320,7 +344,9 @@ func modServeDownloadForm(db *sql.DB) gin.HandlerFunc {
 func modDownloadableForm() gin.HandlerFunc {
   return func (c *gin.Context) {
     form_name := c.Param("formname")
-    c.FileAttachment("/mod/download/" + form_name +"/downloadable.tar.gz" , form_name + ".tar.gz")
+    fmt.Println("ASDF")
+    now := strconv.Itoa(int(time.Now().Unix()))
+    c.FileAttachment(globals.RootDirectory + "/data/" + form_name +"/downloadable.tar.gz" , form_name + "-" + now + "-archive.tar.gz")
   }
 
 }
@@ -371,6 +397,13 @@ func userServeForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
     serveTwigTemplate(c , http.StatusOK , template)
   }
   //Oct3
+}
+
+func modServeDelete() gin.HandlerFunc {
+  return func (c *gin.Context) {
+    c.Header("Content-Type", "text/plain")
+    c.String(http.StatusNotAcceptable , "For safety purposes, you can only submit deletes through the listing\nImagine if someone gave you a link shortener that redirects to this URL and caused you to delete someone's form...")
+  }
 }
 
 /* POST Handlers */
@@ -570,10 +603,18 @@ func modPostCreateForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.Handle
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with DB writing"} )
           return
         }
+        ck_err := builder.CheckFormDirectoryExists(form_construct, globals.RootDirectory)
+        if ck_err == nil{
+          err = destroyer.UndoDirectory(form_construct , globals.RootDirectory)
+          if err != nil {
+            destroyer.UndoForm(db , insertable_form.Name)
+            c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Folder writing"} )
+            return
+          }
+        }
         err = builder.CreateFormDirectory(form_construct , globals.RootDirectory)
-        if err != nil{
-          fmt.Println(err)
-          destroyer.DeleteForm(db , insertable_form.Name)
+        if err != nil {
+          destroyer.UndoForm(db , insertable_form.Name)
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with Folder writing"} )
           return
         }
@@ -583,7 +624,7 @@ func modPostCreateForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.Handle
   //Oct3
 
 }
-func modPostEditForm(db *sql.DB) gin.HandlerFunc {
+func modPostEditForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.HandlerFunc {
   return func (c *gin.Context) {
     form_num , _ := strconv.Atoi(c.Param("formnum"))
 
@@ -623,7 +664,7 @@ func modPostEditForm(db *sql.DB) gin.HandlerFunc {
           c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Server Issue with DB writing"} )
           return
         }
-        c.JSON(http.StatusOK, gin.H{ "message" : "Form written" })
+        c.JSON(http.StatusOK, gin.H{ "message" : "Form was altered" , "URL": "https://" + cfg.SiteName + "/public/forms/" + form_construct.StorageName() + "/" +  strconv.Itoa(form_num) })
     }
   }
 
@@ -631,9 +672,19 @@ func modPostEditForm(db *sql.DB) gin.HandlerFunc {
 func modPostDeleteForm(db *sql.DB) gin.HandlerFunc {
   return func (c *gin.Context) {
     form_name := c.Param("formname")
-    destroyer.DeleteForm(db  , form_name)
+    form_num , err := strconv.Atoi(c.Param("formnum"))
+    if err != nil{
+      fmt.Println(err)
+      c.JSON(http.StatusInternalServerError , gin.H{"error":"Malformed URL"})
+    }
+    err = destroyer.DeleteForm(db , form_name, int64(form_num))
+    if err != nil{
+      fmt.Println(err)
+      c.JSON(http.StatusInternalServerError , gin.H{"error":"Issue on delete"})
+    } else{
+      c.JSON(http.StatusOK , gin.H{"message":"Deleted " + c.Param("formname") + " No. " + c.Param("formnum")})
+    }
   }
-
 }
 func modPostDeleteResponse(db *sql.DB) gin.HandlerFunc {
   return func (c *gin.Context) {
@@ -645,7 +696,13 @@ func modPostDeleteResponse(db *sql.DB) gin.HandlerFunc {
       return
     }
     response_fields , err := tools.GetResponseByID(db , int64(response_number))
-    destroyer.DeleteResponse(db , globals.RootDirectory , int64(response_number) , form_name , response_fields.Identifier)
+    err = destroyer.DeleteResponse(db , globals.RootDirectory , int64(response_number) , form_name , response_fields.Identifier)
+    if err != nil{
+      fmt.Println(err)
+      c.JSON(http.StatusInternalServerError , gin.H{"error":"Issue on delete"})
+    } else{
+      c.JSON(http.StatusOK , gin.H{"message":"Deleted " + c.Param("formname") + " No. " + c.Param("respnum")})
+    }
   }
 }
 

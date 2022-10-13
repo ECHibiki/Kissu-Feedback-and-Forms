@@ -155,7 +155,7 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir
           Label:"test-group1",
           ID: "test-group1",
           Description: "Groups and subgroups may have a description, when set it does not need respondables",
-          // SubGroup: []former.FormGroup{},
+          // SubGroups: []former.FormGroup{},
           Respondables:[]former.UnmarshalerFormObject{
               {
                 Type: former.TextAreaTag ,
