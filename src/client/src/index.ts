@@ -152,7 +152,7 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
 
   let res_id = "response" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
-  container.className =  "creation-prompt"
+  container.className =  "creation-prompt respondable-group"
   container.id =  res_id + "-fields"
   container.setAttribute("style", "width:400px;min-height:200px")
   container.innerHTML = `Element Creation Info:<BR/>
@@ -210,11 +210,11 @@ export function createTextAreaInputs(base_id:string, respondable_container_id: s
 export function createSelectGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement): string{
   let field_id = "field" + (Date.now() + Math.random())
   let select_id = "select" + (Date.now() + Math.random())
-  container.className =  "field-container"
+  container.className = "respondable-group"
   container.id =  select_id
   container.setAttribute("data-type", "selectiongroup")
   container.setAttribute("style", "width:400px;min-height:200px")
-  container.innerHTML = `TextArea Creation Info:<BR/>
+  container.innerHTML = `SelectGroup Creation Info:<BR/>
     <UL>
       <LI>
         Name : <INPUT  data-field="1" name='Name' id="${field_id}-name"/><BR/>
@@ -242,7 +242,7 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
           </LI>
         </OL>
       </LI>
-      <LI><BUTTON id="${select_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}" , '${select_id}")">Delete</BUTTON></LI>
+      <LI><BUTTON id="${select_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${select_id}')">Delete</BUTTON></LI>
     </UL>`;
     return field_id
 }
