@@ -7,7 +7,7 @@
   <BODY>
     <H1>{{ form.FormName }}</H1>
     <P>{{ form.Description }}</P>
-    <FORM action="" method="POST" >
+    <FORM action="" method="POST" onsubmit="return FormLibrary.submitUserPost(this)">
         {% if form.AnonOption %}
           <LABEL>Submit anonymously: <INPUT type="checkbox" name="anon-option" /></LABEL>
         {% endif %}
@@ -15,6 +15,7 @@
           {% include 'user-views/user-form-group.twig' with {'field':field} %}
         {% endfor %}
         <INPUT type="submit" value="Submit Response!"/>
+        <div id="response-container"></div>
     </FORM>
     <HR/>
     {% include 'user-views/user-footer.twig' %}

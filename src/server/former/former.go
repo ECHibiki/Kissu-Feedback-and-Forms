@@ -1,6 +1,7 @@
 package former
 
 import (
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/globals"
   "encoding/json"
   "errors"
   "strings"
@@ -57,6 +58,7 @@ const (
   InvalidNameStarterMessage                    = "Names must start with letters."
   InvalidNameCharactersMessage                 = "Names can only have the '-', '_', '.' or ':' characters."
   InvalidCheckboxMessage                       = "A checkbox creates fields of the given name followed by 'hypen number'(eg. name-3). A checkbox conflicts with other fields that end with 'hypen number'."
+  InvalidTextLengthMessage                     = "A Field exceeds " + globals.STRMaxInputTextLen + " characters. Reduce the length"
 
   ResponseMissingMessage                       = "A field is required yet has no response."
   InvalidInputMessage                          = "A field filled out does not actually exist on the server."
@@ -87,6 +89,7 @@ const (
   InvalidNameCharactersCode
   InvalidNameStarterCode
   InvalidCheckboxCode
+  InvalidTextLengthCode
 
   ResponseMissingCode
   InvalidInputCode

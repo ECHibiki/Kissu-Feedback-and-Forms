@@ -170,3 +170,7 @@ func DirectoryUndoTest(t *testing.T){
     t.Error("Directory should be removed")
   }
 }
+
+func ResponseUndoTest(t *testing.T){
+  t.Fatal("unimplemented")
+}

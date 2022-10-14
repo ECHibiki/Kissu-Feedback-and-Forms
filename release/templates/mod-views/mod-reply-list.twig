@@ -5,18 +5,18 @@
     <TITLE>Kissu Feedback & Forms - Replies to {{ form.ID }}</TITLE>
   </HEAD>
   <BODY>
-  <H1>Responses to: {{ form.FormName }}</H1>
+  <H1>Responses to: {{ storagename }}</H1>
     <P>Description: {{ form.Description }}</P>
     <SPAN><A href="/mod/view/">Back to Forms</A></SPAN>
-    <SPAN><A href="/mod/download/{{ form.Name }}/{{ form.ID }}" target="_blank">DOWNLOAD</A></SPAN>
+    <SPAN><A href="/mod/download/{{ storagename }}/{{ formnum }}" target="_blank">DOWNLOAD</A></SPAN>
     <OL>
     {% for reply in replies %}
-      <LI id="row-{{ form.FormName }}-{{ reply.ID }}">
+      <LI id="row-{{ storagename }}-{{ reply.ID }}">
         <div>
           Responder: {{ reply.Identifier }} <br/>
           SubmittedAt: {{ reply.SubmittedAt }}<br/>
           <A href="/mod/view/{{ reply.FK_ID }}/{{ reply.ID }}">INDIVIDUAL</A>
-          <A href="/mod/response/delete/{{ form.FormName }}/{{ reply.ID }}" onclick="return FormLibrary.postDeleteResponse('{{ form.FormName }}' ,'{{ reply.ID }}')">DELETE</A>
+          <A href="/mod/response/delete/{{ storagename }}/{{ reply.ID }}" onclick="return FormLibrary.postDeleteResponse('{{ storagename }}' ,'{{ reply.ID }}')">DELETE</A>
         </div>
         {% for field in form.FormFields %}
           {% include 'mod-views/mod-reply-item.twig' with {'field':field , 'reply': reply} %}

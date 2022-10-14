@@ -16,6 +16,10 @@ p {
 a {
     color: #a4f3f7;
 }
+textarea {
+    width: 235px;
+    height: 60px;
+}
 
 .respondable-group {
     border: 1px solid #3e3e3e;

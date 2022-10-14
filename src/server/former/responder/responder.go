@@ -12,6 +12,7 @@ import (
   "database/sql"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
   "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
+  "github.com/ECHibiki/Kissu-Feedback-and-Forms/globals"
   "github.com/gin-gonic/gin"
 )
 // c.Request.FromFile
@@ -131,6 +132,13 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
       error_list = append(error_list , former.FailureObject{ former.InvalidInputMessage , former.InvalidInputCode, field  })
       continue
     }
+    if response == ""{
+      continue
+    }
+    if len(response) > globals.MaxInputTextLen {
+      error_list = append(error_list , former.FailureObject{ former.InvalidTextLengthMessage , former.InvalidTextLengthCode, field  })
+    }
+
     options_respondable , is_options := respondable.Object.(former.OptionGroup)
     if is_options {
       found_value := false

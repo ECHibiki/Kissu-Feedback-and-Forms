@@ -247,7 +247,9 @@ func modServeViewSingleForm(db *sql.DB , env *stick.Env) gin.HandlerFunc {
       return
     }
     fmt.Println(reply_list)
-    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply-list.twig" , map[string]stick.Value{ "version" : globals.ProjectVersion , "form" : form_construct , "replies": reply_list })
+    template , err := templater.ReturnFilledTemplate(env , "mod-views/mod-reply-list.twig" , map[string]stick.Value{
+      "version" : globals.ProjectVersion , "form" : form_construct , "formnum": form_data.ID, "storagename": form_data.Name, "replies": reply_list,
+     })
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"Error": "Template generation failed"} )
@@ -506,6 +508,16 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
       FileObjects:  file_map,
     }
 
+    // Check
+    var text_issue_array []former.FailureObject = responder.ValidateTextResponsesAgainstForm(response_form.Responses , form_construct)
+    var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(response_form.FileObjects , form_construct)
+    issue_array := append(text_issue_array, file_issue_array...)
+    if len(issue_array) != 0{
+      fmt.Println(err)
+      c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "There are mistakes with the form" , "error-list": issue_array } )
+      return
+    }
+
     edit_mode , old_user_name, err := responder.CheckIfEdit(db  , response_form )
     if edit_mode{
       responder.DeleteResponderFolder( globals.RootDirectory , response_form , old_user_name )
@@ -518,41 +530,48 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
       response_form.ScrambleResponderID()
     }
 
-    // Check
-    var text_issue_array []former.FailureObject = responder.ValidateTextResponsesAgainstForm(response_form.Responses , form_construct)
-    var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(response_form.FileObjects , form_construct)
-    issue_array := append(text_issue_array, file_issue_array...)
-    if len(issue_array) != 0{
-      fmt.Println(err)
-      c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "There are mistakes with the form" , "issue-list": issue_array } )
-      return
-    }
     err = responder.CreateResponderFolder( globals.RootDirectory , response_form )
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue creating responder data"} )
-      os.RemoveAll(globals.RootDirectory + "/data/" + response_form.FormName + "/" + response_form.ResponderID + "/")
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
       return
     }
     error_list := tools.WriteFilesFromMultipart(globals.RootDirectory , response_form)
     if len(error_list) != 0 {
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue creating responder data"} )
-      os.RemoveAll(globals.RootDirectory + "/data/" + response_form.FormName + "/" + response_form.ResponderID + "/")
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
       return
     }
     err = tools.WriteResponsesToJSONFile(globals.RootDirectory , response_form)
     if err != nil{
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue creating responder data"} )
-      os.RemoveAll(globals.RootDirectory + "/data/" + response_form.FormName + "/" + response_form.ResponderID + "/")
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
       return
     }
     response_fields , err := responder.FormResponseToDBFormat(response_form)
     if err != nil {
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue creating responder DB data"} )
-      os.RemoveAll(globals.RootDirectory + "/data/" + response_form.FormName + "/" + response_form.ResponderID + "/")
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
+      return
+    }
+    if len(response_fields.ResponseJSON) > 65000{
+      fmt.Println("len(response_fields.FieldJSON) > 65000")
+      c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "There is too much data in your form!"} )
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
       return
     }
     // A combination of Responses and File Locations listing a URL for file download where it will be served
@@ -560,11 +579,13 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
     if err != nil {
       fmt.Println(err)
       c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue creating responder DB data "} )
-      os.RemoveAll(globals.RootDirectory + "/data/" + response_form.FormName + "/" + response_form.ResponderID + "/")
+      if !edit_mode{
+        destroyer.UndoResponse(db , response_form.FormName , response_form.RelationalID , response_form.ResponderID, globals.RootDirectory )
+      }
       return
     }
 
-    if c.PostForm("json") != "" {
+    if c.PostForm("json") == "" {
       c.String(http.StatusOK , "Submitted")
     } else{
       c.JSON(http.StatusOK , gin.H{"message": "Submitted"})
@@ -578,12 +599,12 @@ func modPostCreateForm(db *sql.DB , cfg *types.ConfigurationSettings) gin.Handle
     var form_construct former.FormConstruct
     err := json.Unmarshal([]byte(form_construct_raw), &form_construct)
 
-    um , _ := json.Marshal(form_construct)
+    um , _ := json.MarshalIndent(form_construct, " " , " ")
     fmt.Println( form_construct_raw )
     fmt.Println(string(um))
 
     if err != nil {
-      c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue unmarshalling input"} )
+      c.AbortWithStatusJSON(http.StatusInternalServerError ,  gin.H{"error": "Issue unmarshalling input. Did you fill out everything?"} )
     }
     issue_list := builder.ValidateForm(db, form_construct)
     if len(issue_list) > 0 {

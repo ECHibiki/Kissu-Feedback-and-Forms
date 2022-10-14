@@ -156,10 +156,11 @@ func WriteJSONReadmeToDir(filename string, field_map map[string]string) error{
 }
 
 func WriteCSVToDir(filename string, csv_data [][]string) error{
-  f , err := os.OpenFile(filename ,  os.O_RDWR|os.O_CREATE,0644)
+  f , err := os.OpenFile(filename ,  os.O_RDWR|os.O_CREATE|os.O_TRUNC,0644)
   if err != nil {
     return err
   }
+
   writer := csv.NewWriter(f)
   return writer.WriteAll(csv_data)
 }
@@ -171,4 +172,11 @@ func ReadLine(item string) string{
   // convert CRLF to LF
   text = strings.Replace(text, "\n", "", -1)
   return text
+}
+
+func ArrayReverse[T any](arr []T) []T{
+  for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
+      arr[i], arr[j] = arr[j], arr[i]
+  }
+  return arr
 }

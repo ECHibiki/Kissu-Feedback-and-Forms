@@ -62,7 +62,7 @@ func GetAllForms(db *sql.DB) (parsed_row_list []types.FormDBFields , err error){
 }
 
 func GetRepliesToForm(db *sql.DB , id int64)  (parsed_row_list []types.ResponseDBFields , err error){
-  row_list , err := db.Query("SELECT id, fk_id, identifier, response_json, submitted_at FROM responses WHERE fk_id = ? ORDER BY id ASC" , id)
+  row_list , err := db.Query("SELECT id, fk_id, identifier, response_json, submitted_at FROM responses WHERE fk_id = ? ORDER BY id DESC" , id)
   if err != nil {
     return
   }
@@ -97,32 +97,50 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
 
     fields := GetFieldsOfFormConstruct(form_construct)
     for i , field := range fields {
-      field_map[field.GetName()] = i + 1
-      field_list = append(field_list , field.GetName())
+      if field.Type == former.SelectionGroupTag {
+          sg := field.Object.(former.SelectionGroup)
+          if sg.SelectionCategory == former.Checkbox {
+              for chk_index := 0; chk_index < len(sg.CheckableItems); chk_index++ {
+                chk_index := strconv.Itoa(chk_index+1)
+                field_map[field.Object.GetName()+ "-" + chk_index] = i + 1
+                field_list = append(field_list , field.Object.GetName() + "-" + chk_index)
+              }
+          }
+      } else{
+        field_map[field.Object.GetName()] = i + 1
+        field_list = append(field_list , field.Object.GetName())
+      }
+
     }
 
     field_list = append(field_list , "SubmittedAt")
-    field_map["SubmittedAt"] = len(fields) + 1
+    field_map["SubmittedAt"] = len(field_list) - 1
 
     csv_list = append(csv_list , field_list)
 
-
+    fmt.Println(field_map)
     responses, err := GetRepliesToForm(db , id)
     for _ , r := range responses {
-
       responses_list := make([]string , len(fields) + 2)
       responses_list[field_map["Identifier"]] =  r.Identifier
       responses_list[field_map["SubmittedAt"]] = strconv.Itoa(int(r.SubmittedAt))
       var response map[string]string = make(map[string]string)
       err = json.Unmarshal([]byte(r.ResponseJSON) , &response)
+      fmt.Println(r , response)
       if err != nil {
         return err
       }
       for k , v := range response {
+        if _ , exists := field_map[k] ; !exists {
+          fmt.Println(k , v , "Does not exist on field list")
+          continue
+        }
+
         responses_list[field_map[k]] = v
       }
       csv_list = append(csv_list , responses_list)
     }
+    fmt.Println(csv_list)
     err = tools.WriteCSVToDir(initialization_folder + "/data/" + form_data.Name + "/data.csv" , csv_list)
     return err
 }
@@ -146,13 +164,13 @@ func CreateReadmeForGivenForm(db *sql.DB , id int64 , initialization_folder stri
   field_map["FormDescription"] = form_construct.Description
   field_map["AnonOption"] = strconv.FormatBool(form_construct.AnonOption)
   for _ , field := range fields {
-    field_map[field.GetName()] = field.GetDescription()
+    field_map[field.Object.GetName()] = field.Object.GetDescription()
   }
   err = tools.WriteJSONReadmeToDir(initialization_folder + "/data/" + form_data.Name + "/field-descriptors.json" , field_map)
   return err
 }
 
-func GetFieldsOfFormConstruct(form former.FormConstruct) (field_list []former.FormObject){
+func GetFieldsOfFormConstruct(form former.FormConstruct) (field_list []former.UnmarshalerFormObject){
   if len(form.FormFields) == 0 {
     return
   }
@@ -160,20 +178,20 @@ func GetFieldsOfFormConstruct(form former.FormConstruct) (field_list []former.Fo
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // fail location identified by an ID
   for len(subgroup_stack) > 0  {
-    item := subgroup_stack[len(subgroup_stack) - 1]
-    subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
+    item := subgroup_stack[0]
+    subgroup_stack = subgroup_stack[1:]
     if len(item.Respondables) != 0 {
       for _ , r := range item.Respondables {
         name := r.Object.GetName()
         name_found := false
         for _, v := range(field_list){
-          if v.GetName() == name {
+          if v.Object.GetName() == name {
             name_found = true
             break;
           }
         }
         if !name_found {
-          field_list = append(field_list , r.Object)
+          field_list = append(field_list , r)
         }
       }
     }

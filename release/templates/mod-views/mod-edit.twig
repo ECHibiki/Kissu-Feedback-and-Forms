@@ -21,9 +21,9 @@
       <DIV data-depth="0" id="head-group" class="form-group">
           <P>Required Fields:</P>
           <LABEL>Form Title : <INPUT disabled="true" type="text" name="form-name" id="head-name" value="{{form.FormName}}"/> </LABEL> <br/>
-          <LABEL>Form ID : <INPUT disabled="true" type="text" name="id" id="head-id"  value="{{form.ID}}"/> </LABEL><br/>
-          <LABEL>Form Descriptor : <INPUT disabled="true" type="text" name="description" id="head-description" value="{{form.Description}}"/> </LABEL><br/>
-          <LABEL>Allow Anonymous Submissions : <INPUT disabled="true" type="checkbox" name="anon-option" id="head-anon" checked="{{form.AnonOption}}"/></LABEL><br/>
+          <LABEL>Form ID : <INPUT type="text" name="id" id="head-id"  value="{{form.ID}}"/> </LABEL><br/>
+          <LABEL>Form Descriptor : <br/> <TEXTAREA name="description" id="head-description"/>{{form.Description}}</TEXTAREA> </LABEL><br/>
+          <LABEL>Allow Anonymous Submissions : <INPUT type="checkbox" name="anon-option" id="head-anon" checked="{{form.AnonOption}}"/></LABEL><br/>
       </DIV>
       <BUTTON disabled="true" data-link-id="head" id="sub-create">Create Field</BUTTON><br/>
       <br/>

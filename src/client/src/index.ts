@@ -25,6 +25,18 @@ export function helloWorld() {
   console.log("hello client");
 }
 
+export function submitUserPost(form){
+  let fields = new FormData(form)
+  fields.append("json" , "1")
+  console.log(fields)
+  let x = new XMLHttpRequest()
+  x.open("POST" , "" + window.location)
+  x.onload = handleCreateComplete
+  x.send(fields)
+
+  return false;
+}
+
 export function attatchCreators(settings:any){
   console.log(settings)
   let root_group_button = document.getElementById("sub-create")
@@ -104,7 +116,7 @@ function recursiveFormFieldRebuild(field_group:any , base_button:HTMLButtonEleme
       let button_ref = createNewSubgroup(base_button);
       (<HTMLInputElement>document.getElementById(button_ref + "-label")).value = structure.Label;
       (<HTMLInputElement>document.getElementById(button_ref + "-id")).value = structure.ID;
-      (<HTMLInputElement>document.getElementById(button_ref + "-description")).value = structure.Description;
+      (<HTMLTextAreaElement>document.getElementById(button_ref + "-description")).value = structure.Description;
 
       let reference_button = document.getElementById(button_ref);
       recursiveFormFieldRebuild(structure , <HTMLButtonElement>reference_button)
@@ -135,7 +147,7 @@ export function createNewSubgroup( button: HTMLButtonElement): string{
   container.setAttribute("style" , "")
   container.innerHTML = `<LABEL>Group Label : <INPUT type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
   <LABEL>Group ID : <INPUT type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
-  <LABEL>Form Descriptor : <INPUT type="text" name="description" id="${group_id}-description"/></LABEL> <br/>
+  <LABEL>Group Descriptor : <br/> <TEXTAREA name="description" id="${group_id}-description"></TEXTAREA></LABEL> <br/>
   <BUTTON id="${group_id}" onclick="FormLibrary.createNewResponseElement(this)" data-link-id="${group_id}" >Create New Respondable Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.createNewSubgroup(this)" data-link-id="${group_id}">Create New Group Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.deleteContainer('${parent_id + "-group"}' , '${ group_id + "-group"}')">Delete Subgroup</BUTTON><br/>
@@ -354,8 +366,18 @@ export function submitForm(button: HTMLButtonElement , post_url){
         Respondables: [],
       })
     } else if((node_list[index] as HTMLLabelElement).tagName.toUpperCase() == "LABEL"){
-      let input_node = (node_list[index]  as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+      let input_node:any = (node_list[index] as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+
       // console.log(node_list[index] , input_node)
+      if (!input_node){
+        input_node = (node_list[index] as HTMLLabelElement).getElementsByTagName("SELECT")[0] as HTMLSelectElement
+      }
+      if (!input_node){
+        input_node = (node_list[index] as HTMLLabelElement).getElementsByTagName("TEXTAREA")[0] as HTMLTextAreaElement
+      }
+      if (!input_node){
+        continue;
+      }
       switch (input_node.getAttribute("name")) {
         case "form-name":
         response_object["FormName"] = input_node.value
@@ -492,7 +514,16 @@ export function submitForm(button: HTMLButtonElement , post_url){
         // defined by UnmarshalerFormObject where object will be a name as key ->value as value type object
         //
       } else if((child as HTMLLabelElement).tagName.toUpperCase() == "LABEL"){
-        let input_node = (child  as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+        let input_node:any = (child  as HTMLLabelElement).getElementsByTagName("INPUT")[0] as HTMLInputElement
+        if (!input_node){
+          input_node = (child as HTMLLabelElement).getElementsByTagName("SELECT")[0] as HTMLSelectElement
+        }
+        if (!input_node){
+          input_node = (child as HTMLLabelElement).getElementsByTagName("TEXTAREA")[0] as HTMLTextAreaElement
+        }
+        if(!input_node){
+          continue;
+        }
         switch (input_node.getAttribute("name")) {
           case "form-label":
           current_form_field["Label"] = input_node.value
@@ -535,26 +566,27 @@ export function sendCreateRequest(form: string , url:string){
 export function handleCreateComplete(e) {
   let response_json:any = {}
   try {
-    response_json = JSON.parse(e.originalTarget.responseText)
+    response_json = JSON.parse(e.target.responseText)
+    console.log(response_json , e)
   } catch (error) {
-    document.getElementById("response-container").innerHTML = `Hard server crash`
+    document.getElementById("response-container").innerHTML = `Hard server crash<BR/><TEXTAREA>${error.toString()}</TEXTAREA>`
     return
   }
-  console.log(response_json , e.originalTarget.status)
   if(response_json.error){
     if(!response_json['error-list']){
       document.getElementById("response-container").innerHTML = "Server error: " + response_json["error"]
+    } else{
+      let error_message =  "There are some issues preventing you from submitting...<br/><ul>"
+      response_json['error-list'].forEach((err) => {
+        error_message += "<li>" + err.FailPosition + " : " + err.FailType + "</li>"
+      });
+      error_message += "</ul>"
+      document.getElementById("response-container").innerHTML = error_message
     }
-    let error_message =  "There are some issues preventing you from submitting...<br/><ul>"
-    response_json['error-list'].forEach((err) => {
-      error_message += "<li>" + err.FailPosition + " : " + err.FailType + "</li>"
-    });
-    error_message += "</ul>"
-    document.getElementById("response-container").innerHTML = error_message
 
   } else{
-    document.getElementById("response-container").innerHTML = `${response_json.message}...<br/>
-      URL: <a href="${response_json.URL}">${response_json.URL}</a>
+    document.getElementById("response-container").innerHTML = `${response_json.message} - ${Date.now()}<br/>
+      ${response_json.URL ? `URL: <a href="${response_json.URL}">${response_json.URL}</a>` : "" }
     `
   }
 }
@@ -568,7 +600,7 @@ export function postDeleteForm(name: string , number:string){
     x.onload = (e:any) => {
       let response_json:any = {}
       try {
-        response_json = JSON.parse(e.originalTarget.responseText)
+        response_json = JSON.parse(e.target.responseText)
       } catch (error) {
         alert("Error: Hard server crash")
         return
@@ -594,7 +626,7 @@ export function postDeleteResponse(form_name: string , response_number:string){
     x.onload = (e:any) => {
       let response_json:any = {}
       try {
-        response_json = JSON.parse(e.originalTarget.responseText)
+        response_json = JSON.parse(e.target.responseText)
       } catch (error) {
         alert("Error: Hard server crash")
         return
