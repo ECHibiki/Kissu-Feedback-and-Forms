@@ -20,7 +20,9 @@ textarea {
     width: 235px;
     height: 60px;
 }
-
+.readonly-input {
+    cursor: default;
+}
 .respondable-group {
     border: 1px solid #3e3e3e;
     padding: 4px 5px;

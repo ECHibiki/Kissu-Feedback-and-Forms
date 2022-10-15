@@ -362,7 +362,7 @@ export function submitForm(button: HTMLButtonElement , post_url){
         Label: "",
         ID: "",
         Description: "",
-        SubGroup: [],
+        SubGroups: [],
         Respondables: [],
       })
     } else if((node_list[index] as HTMLLabelElement).tagName.toUpperCase() == "LABEL"){
@@ -414,7 +414,7 @@ export function submitForm(button: HTMLButtonElement , post_url){
     let first_route = routes[0]
     let current_form_field = response_object["FormFields"][first_route]
     for (let route_position = 1 ; route_position < routes.length ; route_position++){
-      current_form_field = current_form_field["SubGroup"][routes[route_position]];
+      current_form_field = current_form_field["SubGroups"][routes[route_position]];
     }
     for (let c = 0 ; c < subgroup.node.childNodes.length ; c++){
       let child = subgroup.node.childNodes[c];
@@ -428,11 +428,11 @@ export function submitForm(button: HTMLButtonElement , post_url){
         level_order += 1;
         // If response_object Fields are not passed by reference then we'll have to do a reconstruction of the response object using current_form_field
         // Probably would be slow,  but is the first thing that comes to mind
-        current_form_field["SubGroup"].push({
+        current_form_field["SubGroups"].push({
           Label: "",
           ID: "",
           Description: "",
-          SubGroup: [],
+          SubGroups: [],
           Respondables: [],
         })
 

@@ -5,28 +5,29 @@
   <DIV id="{{respondable.Object.Field.Name}}" class="respondable-group  {{ respondable.GetType() }}">
     {% if respondable.GetType() == "textarea" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <TEXTAREA disabled="true" data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}">
+      <TEXTAREA class="readonly-input" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}">
 {{ reply[respondable.Object.Field.Name] }}
       </TEXTAREA> </LABEL>
     {% elseif respondable.GetType() == "genericinput" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <INPUT  disabled="true" data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.GetType()}}" /> </LABEL>
+      <INPUT class="readonly-input"  readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.GetType()}}" /> </LABEL>
     {% elseif respondable.GetType() == "fileinput" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %}  {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <INPUT  disabled="true" data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" type="file" data-allowed-regex="{{ respondable.Object.AllowedExtRegex }}"  data-max-size="{{ respondable.Object.MaxSize }}" /> </LABEL>
+      <INPUT class="readonly-input"  readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" type="file" data-allowed-regex="{{ respondable.Object.AllowedExtRegex }}"  data-max-size="{{ respondable.Object.MaxSize }}" /> </LABEL>
     {% elseif respondable.GetType() == "selectiongroup" %}
         <P>{{respondable.Object.Field.Label}}</P>
         {% for check in respondable.Object.CheckableItems %}
           {% set chkname = respondable.Object.Field.Name ~ ((respondable.Object.GetCategory() == "checkbox") ? ("-" ~ loop.index) : "" ) %}
-          <LABEL>{{ check.Label }}<INPUT disabled="true" type="{{ respondable.Object.GetCategory() }}" data-required="{{ respondable.Object.Field.Required ? "true" : "false" }}"
+          <LABEL>{{ check.Label }}<INPUT class="readonly-input" onclick="return false" readonly
+            {% if reply[chkname] == check.Value %} checked {% endif %}
+            type="{{ respondable.Object.GetCategory() }}" data-required="{{ respondable.Object.Field.Required ? "true" : "false" }}"
             data-name="{{respondable.Object.Field.Name}}{% if respondable.Object.GetCategory() == "checkbox" %}-{{ loop.index }}{% endif %}"
             value="{{check.Value}}"
-            {% if reply[chkname] == check.Value %} checked="true" {% endif %}
           /></LABEL>
         {% endfor %}
     {% elseif respondable.GetType() == "optiongroup" %}
         <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-        <SELECT data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" >
+        <SELECT class="readonly-input" data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" >
           {% for opt in respondable.Options %}
             <OPTION value="{{opt.Value}}">{{ opt.Value }}</OPTION>
           {% endfor %}
