@@ -282,7 +282,7 @@ func TestIllegalFName(t *testing.T) {
 		ResponderID:  "192.168.1.1",
 		Responses:    map[string]string{},
 		FileObjects: map[string]former.MultipartFile{
-			"Test-FI": former.MultipartFile{
+			"Test-FI": {
 				File: nil,
 				Header: &multipart.FileHeader{
 					Filename: "/definetly/not/allowed/jpg",

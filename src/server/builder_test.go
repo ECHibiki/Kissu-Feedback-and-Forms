@@ -17,7 +17,7 @@ func TestConversionBetweenTypesAndInput(t *testing.T) {
 	var potential_inputs_InputType []string = []string{"color", "Date", "EMAIL", "nUMBER", "it's-invalid"}
 	var correct_outputs_InputType []former.InputType = []former.InputType{former.Color, former.Date, former.Email, former.Number, former.Text}
 	var valid_check_InputType []bool = []bool{true, true, true, true, false}
-	for index, _ := range valid_check_InputType {
+	for index := range valid_check_InputType {
 		input_type, valid := former.InputTypeFromString(potential_inputs_InputType[index])
 		if valid != valid_check_InputType[index] {
 			t.Error("Validity of check was incorect", potential_inputs_InputType[index], valid, valid_check_InputType[index])
@@ -29,7 +29,7 @@ func TestConversionBetweenTypesAndInput(t *testing.T) {
 	var potential_inputs_SelectionCategory []string = []string{"checkbox", "radio", "Checkbox", "rADIO", "invalid"}
 	var correct_outputs_SelectionCategory []former.SelectionCategory = []former.SelectionCategory{former.Checkbox, former.Radio, former.Checkbox, former.Radio, former.Checkbox}
 	var valid_check_SelectionCategory []bool = []bool{true, true, true, true, false}
-	for index, _ := range valid_check_SelectionCategory {
+	for index := range valid_check_SelectionCategory {
 		input_type, valid := former.SelectionCategoryFromString(potential_inputs_SelectionCategory[index])
 		if valid != valid_check_SelectionCategory[index] {
 			t.Error("Validity of check was incorect", potential_inputs_SelectionCategory[index], valid, valid_check_SelectionCategory[index])
@@ -41,7 +41,7 @@ func TestConversionBetweenTypesAndInput(t *testing.T) {
 	var potential_inputs_FormObjectTag []string = []string{"textarea", "genericinput", "fileinput", "selectiongroup", "optiongroup", "invalid"}
 	var correct_outputs_FormObjectTag []former.FormObjectTag = []former.FormObjectTag{former.TextAreaTag, former.GenericInputTag, former.FileInputTag, former.SelectionGroupTag, former.OptionGroupTag, former.GenericInputTag}
 	var valid_check_FormObjectTag []bool = []bool{true, true, true, true, true, false}
-	for index, _ := range valid_check_FormObjectTag {
+	for index := range valid_check_FormObjectTag {
 		input_type, valid := former.FormObjectTagFromString(potential_inputs_FormObjectTag[index])
 		if valid != valid_check_FormObjectTag[index] {
 			t.Error("Validity of check was incorect", potential_inputs_FormObjectTag[index], valid, valid_check_FormObjectTag[index])
