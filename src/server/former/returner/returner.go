@@ -27,7 +27,7 @@ func RenderTestingTemplate[T int64 | string](db *sql.DB, env *stick.Env, root_di
       returned_form , err = tools.GetFormOfName(db, i.(string))
   }
   if err != nil{
-    fmt.Println(db_key)
+    fmt.Printf("%v\n" , db_key)
     panic(err)
   }
 
@@ -39,7 +39,6 @@ func RenderTestingTemplate[T int64 | string](db *sql.DB, env *stick.Env, root_di
   var construction_variables map[string]stick.Value = map[string]stick.Value{"form" : rebuild_group }
 
   // Render a form only used for testing
-  // fmt.Println(construction_variables["responables"])
   testing_form_render, err := templater.ReturnFilledTemplate(env , root_dir + "/templates/test-views/render-test.twig" , construction_variables)
   return testing_form_render , err
 }
@@ -96,18 +95,20 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
     field_map["Identifier"] = 0
 
     fields := GetFieldsOfFormConstruct(form_construct)
-    for i , field := range fields {
+    for field_index , field := range fields {
       if field.Type == former.SelectionGroupTag {
           sg := field.Object.(former.SelectionGroup)
           if sg.SelectionCategory == former.Checkbox {
               for chk_index := 0; chk_index < len(sg.CheckableItems); chk_index++ {
-                chk_index := strconv.Itoa(chk_index+1)
-                field_map[field.Object.GetName()+ "-" + chk_index] = i + 1
-                field_list = append(field_list , field.Object.GetName() + "-" + chk_index)
+                chk_str_index := strconv.Itoa(chk_index+1)
+                // + 1 because it's possitioned based on the identifier being set
+                field_map[field.Object.GetName()+ "-" + chk_str_index] = field_index + chk_index + 1
+                field_list = append(field_list , field.Object.GetName() + "-" + chk_str_index)
               }
           }
       } else{
-        field_map[field.Object.GetName()] = i + 1
+        // + 1 because it's possitioned based on the identifier being set
+        field_map[field.Object.GetName()] = field_index + 1
         field_list = append(field_list , field.Object.GetName())
       }
 
@@ -118,21 +119,19 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
 
     csv_list = append(csv_list , field_list)
 
-    fmt.Println(field_map)
     responses, err := GetRepliesToForm(db , id)
     for _ , r := range responses {
-      responses_list := make([]string , len(fields) + 2)
+      responses_list := make([]string , len(field_list) )
       responses_list[field_map["Identifier"]] =  r.Identifier
       responses_list[field_map["SubmittedAt"]] = strconv.Itoa(int(r.SubmittedAt))
       var response map[string]string = make(map[string]string)
       err = json.Unmarshal([]byte(r.ResponseJSON) , &response)
-      fmt.Println(r , response)
       if err != nil {
         return err
       }
       for k , v := range response {
         if _ , exists := field_map[k] ; !exists {
-          fmt.Println(k , v , "Does not exist on field list")
+          fmt.Errorf("%s %s Does not exist on field list" , k , v)
           continue
         }
 
@@ -140,7 +139,6 @@ func CreateInstancedCSVForGivenForm(db *sql.DB , id int64 , initialization_folde
       }
       csv_list = append(csv_list , responses_list)
     }
-    fmt.Println(csv_list)
     err = tools.WriteCSVToDir(initialization_folder + "/data/" + form_data.Name + "/data.csv" , csv_list)
     return err
 }

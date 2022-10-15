@@ -1,7 +1,7 @@
 package responder
 
 import (
-  "fmt"
+  // "fmt"
   "os"
   "strings"
   "errors"
@@ -61,7 +61,6 @@ func validateRequiredTextFields(text_responses map[string]string , form former.F
         select_group , is_selection := respondable.Object.(former.SelectionGroup)
         if is_selection && select_group.SelectionCategory == former.Checkbox {
           answer_found := false
-          fmt.Println("Select" , select_group.CheckableItems , text_responses)
           for i , _ := range select_group.CheckableItems {
             _ , ok := text_responses[ name + "-" + strconv.Itoa(i + 1) ]
             if ok {
@@ -162,7 +161,6 @@ func validateResponseTextFields(text_responses map[string]string , form former.F
           if selection_group.SelectionCategory == former.Checkbox {
             field_index , err := strconv.Atoi(field[strings.LastIndex(field, "-")+1:])
             if err != nil{
-              fmt.Println("strconv.Atoi(field[:strings.LastIndex(field, )])" , err , field[strings.LastIndex(field, "-")+1:])
               error_list = append(error_list , former.FailureObject{ former.InvalidSelectionIndexMessage , former.InvalidSelectionIndexCode, field  })
               continue
             }
@@ -326,17 +324,14 @@ func FillMapWithPostParams(c *gin.Context , resp_map map[string]string , form fo
   var subgroup_stack []former.FormGroup
   subgroup_stack = append(subgroup_stack , form.FormFields...)
   // fail location identified by an ID
-  fmt.Println("SS" , subgroup_stack)
   for len(subgroup_stack) > 0  {
     item := subgroup_stack[len(subgroup_stack) - 1]
-    fmt.Println("it" , item)
     subgroup_stack = subgroup_stack[:len(subgroup_stack) - 1]
     if len(item.Respondables) != 0 {
       for _ , r := range item.Respondables {
         if r.Type == former.FileInputTag {
           continue
         }
-        fmt.Println("sm" , r.Object.GetName() , c.PostForm(r.Object.GetName()) , r)
         if r.Type == former.SelectionGroupTag && r.Object.(former.SelectionGroup).SelectionCategory == former.Checkbox {
           for i , _ := range r.Object.(former.SelectionGroup).CheckableItems {
             if _ , exists :=  c.GetPostForm(r.Object.GetName() + "-" + strconv.Itoa(i + 1)) ; exists{
@@ -353,7 +348,6 @@ func FillMapWithPostParams(c *gin.Context , resp_map map[string]string , form fo
       subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
-  fmt.Println(resp_map)
 }
 func FillMapWithPostFiles(c *gin.Context , file_map map[string]former.MultipartFile , form former.FormConstruct){
   if len(form.FormFields) == 0 {
@@ -382,13 +376,4 @@ func FillMapWithPostFiles(c *gin.Context , file_map map[string]former.MultipartF
       subgroup_stack = append(subgroup_stack , item.SubGroups...)
     }
   }
-}
-
-func DeleteResponderFolder(root_dir string,  new_response former.FormResponse , old_user_name string) error{
-  return os.RemoveAll(root_dir + "/data/" + new_response.FormName + "/" + old_user_name)
-}
-
-func DeleteDatabaseResponse(db *sql.DB , relational_id int64 , old_user_name string) error{
-    _ , err := db.Exec("DELETE FROM responses WHERE fk_id= ? AND identifier = ? LIMIT 1" , relational_id , old_user_name)
-    return err
 }

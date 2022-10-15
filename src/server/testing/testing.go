@@ -24,7 +24,7 @@ func testTesting() bool{
   if strings.HasSuffix(os.Args[0], ".test") {
     return true
   }
-  fmt.Println("normal run")
+  fmt.Printf("normal run\n")
   return false
 }
 
@@ -35,19 +35,19 @@ func dropDBOnlyForTesting(db *sql.DB , db_name string) {
   var err error
   _, err = db.Exec("DROP TABLE responses")
   if err != nil{
-    fmt.Println("err: dropDBOnlyForTesting " , err)
+    fmt.Printf("err: dropDBOnlyForTesting  %s\n" , err.Error())
   }
   _, err = db.Exec("DROP TABLE forms")
   if err != nil{
-    fmt.Println("err: dropDBOnlyForTesting " , err)
+    fmt.Printf("err: dropDBOnlyForTesting %s\n" , err.Error())
   }
   _, err = db.Exec("DROP TABLE passwords")
   if err != nil{
-    fmt.Println("err: dropDBOnlyForTesting " , err)
+    fmt.Printf("err: dropDBOnlyForTesting  %s\n" , err.Error())
   }
   _, err = db.Exec("DROP TABLE logins")
   if err != nil{
-    fmt.Println("err: dropDBOnlyForTesting " , err)
+    fmt.Printf("err: dropDBOnlyForTesting  %s\n" , err.Error())
   }
 }
 
@@ -85,18 +85,18 @@ func CleanupTestingInitializations(initialization_folder string){
 
   cfg , db , err := connectToDBForTesting(initialization_folder)
   if err != nil {
-    fmt.Println("err: connectToDBForTesting" , err)
+    fmt.Printf("err: connectToDBForTesting %s\n" , err.Error())
   }
   dropDBOnlyForTesting(db , cfg.DBName)
 
 
   err = os.RemoveAll("../../test/settings/")
   if err != nil{
-    fmt.Println(err)
+    fmt.Errorf(err.Error())
   }
   err = os.RemoveAll("../../test/data/")
   if err != nil{
-    fmt.Println(err)
+    fmt.Errorf(err.Error())
   }
 
 }
@@ -261,7 +261,7 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir
   }
   issue_array := builder.ValidateForm(db  ,base_demo_form)
   if len(issue_array) != 0 {
-    fmt.Println(issue_array)
+    fmt.Printf("%+v", issue_array)
     panic("Issue array, issues detected")
   }
   var insertable_form types.FormDBFields

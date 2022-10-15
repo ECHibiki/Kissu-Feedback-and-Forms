@@ -34,7 +34,7 @@ func MakeFormWritable(form former.FormConstruct) (types.FormDBFields  , error){
 func CreateFormDirectory(form former.FormConstruct , root_dir string) error{
   safe_name := form.StorageName()
   err := os.Mkdir(root_dir + "/data/" + safe_name + "/" , 0775 )
-  fmt.Println("Writting new form to " , root_dir + "/data/" + safe_name + "/")
+  fmt.Printf("Writting new form to %s/data/%s/ \n" , root_dir , safe_name )
   if err != nil {
     return err
   }

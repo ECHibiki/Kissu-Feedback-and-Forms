@@ -29,6 +29,18 @@ func LogError(storage_dir string, message string){
   }
 }
 
+func CheckSafeDirectoryName(dir string) bool{
+  bad := strings.Contains(dir , "/")
+  if bad{
+    return false
+  }
+  bad = strings.Contains(dir , "\\")
+  if bad{
+    return false
+  }
+  return true
+}
+
 func WriteResponsesToJSONFile(root_dir string , resp former.FormResponse) error {
   storage_dir := root_dir + "/data/" + resp.FormName + "/" + resp.ResponderID + "/"
 
