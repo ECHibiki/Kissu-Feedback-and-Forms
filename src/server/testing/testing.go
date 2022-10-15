@@ -268,7 +268,7 @@ func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir
 	if err != nil {
 		panic(err)
 	}
-	err = tools.StoreFormToDB(db, insertable_form)
+	err = builder.StoreFormToDB(db, insertable_form)
 	if err != nil {
 		panic(err)
 	}
@@ -348,10 +348,10 @@ func ReplyToForm(form_id int64, target_storage_name string, user_id string, db *
 
 	responder.CreateResponderFolder(initialization_folder, demo_response)
 	tools.WriteFilesFromMultipart(initialization_folder, demo_response)
-	tools.WriteResponsesToJSONFile(initialization_folder, demo_response)
+	responder.WriteResponsesToJSONFile(initialization_folder, demo_response)
 	demo_response_db_fields, _ := responder.FormResponseToDBFormat(demo_response)
 	// A combination of Responses and File Locations listing a URL for file download where it will be served
-	tools.StoreResponseToDB(db, demo_response_db_fields)
+	responder.StoreResponseToDB(db, demo_response_db_fields)
 }
 
 func ReplyToFormScrambled(form_id int64, target_storage_name string, user_id string, db *sql.DB, initialization_folder string) {
@@ -383,8 +383,8 @@ func ReplyToFormScrambled(form_id int64, target_storage_name string, user_id str
 
 	responder.CreateResponderFolder(initialization_folder, demo_response)
 	tools.WriteFilesFromMultipart(initialization_folder, demo_response)
-	tools.WriteResponsesToJSONFile(initialization_folder, demo_response)
+	responder.WriteResponsesToJSONFile(initialization_folder, demo_response)
 	demo_response_db_fields, _ := responder.FormResponseToDBFormat(demo_response)
 	// A combination of Responses and File Locations listing a URL for file download where it will be served
-	tools.StoreResponseToDB(db, demo_response_db_fields)
+	responder.StoreResponseToDB(db, demo_response_db_fields)
 }

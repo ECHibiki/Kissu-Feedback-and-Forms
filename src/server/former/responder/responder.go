@@ -2,18 +2,19 @@ package responder
 
 import (
 	// "fmt"
-	"database/sql"
-	"encoding/json"
-	"errors"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/globals"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 	"github.com/gin-gonic/gin"
-	"os"
-	"regexp"
+	"encoding/json"
+	"database/sql"
+	"io/ioutil"
 	"strconv"
 	"strings"
+	"regexp"
+	"errors"
 	"time"
+	"os"
 )
 
 // c.Request.FromFile
@@ -376,4 +377,37 @@ func FillMapWithPostFiles(c *gin.Context, file_map map[string]former.MultipartFi
 			subgroup_stack = append(subgroup_stack, item.SubGroups...)
 		}
 	}
+}
+
+func WriteResponsesToJSONFile(root_dir string, resp former.FormResponse) error {
+	storage_dir := root_dir + "/data/" + resp.FormName + "/" + resp.ResponderID + "/"
+
+	json_resp := ConvertFormResponseToJSONFormResponse(root_dir, resp)
+
+	json_bytes, err := json.MarshalIndent(json_resp, "", " ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(storage_dir+"responses.json", json_bytes, 0644)
+	return err
+}
+
+func ConvertFormResponseToJSONFormResponse(root_dir string, resp former.FormResponse) former.JSONFormResponse {
+	json_resp := former.JSONFormResponse{}
+	json_resp.FormName = resp.FormName
+	json_resp.RelationalID = resp.RelationalID
+	json_resp.ResponderID = resp.ResponderID
+	json_resp.Responses = resp.Responses
+	json_resp.FilePaths = make(map[string]string)
+	storage_dir := root_dir + "/data/" + resp.FormName + "/" + resp.ResponderID + "/"
+	for k, v := range resp.FileObjects {
+		json_resp.FilePaths[k] = storage_dir + "files/" + v.Header.Filename
+	}
+
+	return json_resp
+}
+
+func StoreResponseToDB(db *sql.DB, db_response types.ResponseDBFields) error {
+	_, err := db.Exec("INSERT INTO responses VALUES( NULL , ? , ? , ? , ? )", db_response.FK_ID, db_response.Identifier, db_response.ResponseJSON, db_response.SubmittedAt)
+	return err
 }

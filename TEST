@@ -1,2 +1,2 @@
 cd src/server
-go test
+go test -gcflags="-e"

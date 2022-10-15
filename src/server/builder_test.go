@@ -5,8 +5,8 @@ import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/builder"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/destroyer"
+	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 	"os"
 	"testing"
@@ -202,19 +202,19 @@ func TestFormMake(t *testing.T) {
 	if err == nil {
 		t.Fatal("Form was inserted twice, with same name, and passed without error")
 	}
-	should_not_exist_form, err := tools.GetFormOfID(db, 2)
+	should_not_exist_form, err := returner.GetFormOfID(db, 2)
 	if err == nil || should_not_exist_form.ID != 0 {
 		t.Fatal("Yet still, a form that should not exists does")
 	}
 
 	var returned_form types.FormDBFields
 	var rebuild_group former.FormConstruct
-	returned_form, err = tools.GetFormOfID(db, 1)
+	returned_form, err = returner.GetFormOfID(db, 1)
 	if returned_form.FieldJSON != string(marshaled_form_for_tests) {
 		t.Fatal("Fields returns from DB are not same as marshaled")
 	}
 
-	_, err = tools.GetFormOfName(db, demo_form.StorageName())
+	_, err = returner.GetFormOfName(db, demo_form.StorageName())
 
 	err = json.Unmarshal([]byte(returned_form.FieldJSON), &rebuild_group)
 	if err != nil {
@@ -1048,7 +1048,7 @@ func TestEditOfForm(t *testing.T) {
 		},
 	}
 
-	base_form_db, err := tools.GetFormOfID(db, 1)
+	base_form_db, err := returner.GetFormOfID(db, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1086,7 +1086,7 @@ func TestEditOfForm(t *testing.T) {
 	}
 
 	var returned_form types.FormDBFields
-	returned_form, err = tools.GetFormOfID(db, 1)
+	returned_form, err = returner.GetFormOfID(db, 1)
 
 	if returned_form.UpdatedAt == base_form_db.UpdatedAt {
 		t.Error("UpdatedAt did not change", returned_form.UpdatedAt, base_form_db.UpdatedAt)
@@ -1118,7 +1118,7 @@ func DirectoryVerification(t *testing.T) {
 	first_store := "Test_form_1"
 	prebuilder.DoFormInitialization(first_name, "a-simple-identifier", db, initialization_folder)
 
-	f, _ := tools.GetFormOfID(db, int64(1))
+	f, _ := returner.GetFormOfID(db, int64(1))
 	var form_construct former.FormConstruct
 	json.Unmarshal([]byte(f.FieldJSON), &form_construct)
 

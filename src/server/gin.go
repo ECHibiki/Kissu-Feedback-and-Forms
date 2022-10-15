@@ -22,6 +22,10 @@ import (
 	"time"
 )
 
+// Sytax for project:
+  // order of items is as follows: C , DB  , CFG , Stick
+  // Form search is name then number
+
 func serveTwigTemplate(c *gin.Context, status int, template string) {
 	c.Header("Content-Type", "text/html")
 	c.String(status, template)
@@ -119,8 +123,7 @@ func generalGetHomepageHandler(env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		template, err := templater.ReturnFilledTemplate(env, "user-views/user-home.twig", map[string]stick.Value{"version": globals.ProjectVersion})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Home generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Home generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -132,8 +135,7 @@ func modServeHomepageHandler(env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-home.twig", map[string]stick.Value{"version": globals.ProjectVersion})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Homepage generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Homepage generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -148,8 +150,7 @@ func modServeCreateForm(env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-create.twig", map[string]stick.Value{"version": globals.ProjectVersion})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Creator generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Creator generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -162,31 +163,28 @@ func modServeCreateForm(env *stick.Env) gin.HandlerFunc {
 func modServeEditForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		formnum := c.Param("formnum")
-		num, err := strconv.Atoi(formnum)
+		num, err := strconv.ParseInt(formnum , 10 , 64)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "URI not a formnumber"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "URI not a formnumber"})
 			return
 		}
-		form_data, err := tools.GetFormOfID(db, int64(num))
+		form_data, err := returner.GetFormOfID(db, int64(num))
 		if err != nil {
 			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Can't find form"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't find form"})
 			return
 		}
 		var form_construct former.FormConstruct
 		err = json.Unmarshal([]byte(form_data.FieldJSON), &form_construct)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Invalid Unmarshaling of form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Invalid Unmarshaling of form"})
 			return
 		}
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-edit.twig", map[string]stick.Value{
 			"version": globals.ProjectVersion, "id": form_data.ID, "form": form_construct, "form_str": form_data.FieldJSON,
 		})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -200,13 +198,12 @@ func modServeViewAllForms(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		form_data_list, err := returner.GetAllForms(db)
 		if err != nil {
 			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Can't get forms"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get forms"})
 			return
 		}
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-form-list.twig", map[string]stick.Value{"version": globals.ProjectVersion, "form_list": form_data_list})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -217,18 +214,25 @@ func modServeViewAllForms(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 // Handle route /mod/view/FORMNUMBER and /mod/api/#
 func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		form_num, err := strconv.Atoi(c.Param("formnum"))
-		form_data, err := tools.GetFormOfID(db, int64(form_num))
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
+    if err != nil {
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Malformed request"})
+      return
+    }
+		form_data, err := returner.GetFormOfID(db, form_num)
+    if err != nil {
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Malformed request"})
+      return
+    }
 		var form_construct former.FormConstruct
 		err = json.Unmarshal([]byte(form_data.FieldJSON), &form_construct)
-		form_replies, err := returner.GetRepliesToForm(db, int64(form_num))
+		form_replies, err := returner.GetRepliesToForm(db, form_num)
 		var reply_list []map[string]string
 		for _, r := range form_replies {
 			var r_map map[string]string
 			err = json.Unmarshal([]byte(r.ResponseJSON), &r_map)
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a reply"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a reply"})
 				return
 			}
 			r_map["ID"] = strconv.Itoa(int(r.ID))
@@ -239,15 +243,14 @@ func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		}
 		if err != nil {
 			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Can't get form replies"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get form replies"})
 			return
 		}
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-reply-list.twig", map[string]stick.Value{
 			"version": globals.ProjectVersion, "form": form_construct, "formnum": form_data.ID, "storagename": form_data.Name, "replies": reply_list,
 		})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -257,33 +260,38 @@ func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 // Handle route /mod/view/FORMNUMBER/RESPONSENUMBER and /mod/api/#/#
 func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		form_num, err := strconv.Atoi(c.Param("formnum"))
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Form malformed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Form malformed"})
 			return
 		}
-		form_data, err := tools.GetFormOfID(db, int64(form_num))
+		form_data, err := returner.GetFormOfID(db, form_num)
 		if err != nil {
 			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Form malformed"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Couldn't find form"})
 			return
 		}
 		var form_construct former.FormConstruct
 		err = json.Unmarshal([]byte(form_data.FieldJSON), &form_construct)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a form"})
 			return
 		}
 
-		reply_num, err := strconv.Atoi(c.Param("respnum"))
+		reply_num, err := strconv.ParseInt(c.Param("respnum") , 10 , 64)
+    if err != nil {
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Form malformed"})
+      return
+    }
 		reply_data, err := returner.GetResponseByID(db, int64(reply_num))
 		var reply_construct map[string]string
 		err = json.Unmarshal([]byte(reply_data.ResponseJSON), &reply_construct)
+    if err != nil {
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Could not find ID"})
+      return
+    }
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a reply"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a reply"})
 			return
 		}
 		reply_construct["ID"] = strconv.Itoa(int(reply_data.ID))
@@ -293,8 +301,7 @@ func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 
 		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-singular-reply.twig", map[string]stick.Value{"version": globals.ProjectVersion, "storagename": form_data.Name, "form": form_construct, "reply": reply_construct})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -305,31 +312,27 @@ func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 // Handle /mod/download/FORMNAME/FORMNUMBER
 func modServeDownloadForm(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		form_num, err := strconv.Atoi(c.Param("formnum"))
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a form"})
 			return
 		}
 		form_name := c.Param("formname")
 
-		err = returner.CreateInstancedCSVForGivenForm(db, int64(form_num), globals.RootDirectory)
+		err = returner.CreateInstancedCSVForGivenForm(db, form_num, globals.RootDirectory)
 		if err != nil {
-			fmt.Errorf("CSV %s", err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a form"})
 			return
 		}
-		err = returner.CreateReadmeForGivenForm(db, int64(form_num), globals.RootDirectory)
+		err = returner.CreateReadmeForGivenForm(db, form_num, globals.RootDirectory)
 		if err != nil {
-			fmt.Errorf("README %s", err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a form"})
 			return
 		}
 		// A tar.gz file containing the CSV, as it has zipped the entire form directory together
-		err = tools.CreateDownloadableForGivenForm(globals.RootDirectory, form_name)
+		err = returner.CreateDownloadableForGivenForm( form_name , globals.RootDirectory)
 		if err != nil {
-			fmt.Errorf("TAR %s", err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Issue parsing a form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a form"})
 			return
 		}
 		c.Redirect(http.StatusFound, "/mod/download/"+form_name+"/downloadable.tar.gz")
@@ -348,19 +351,19 @@ func modDownloadableForm() gin.HandlerFunc {
 
 func modServeAPIGetAll() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "API is unimplemented"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "API is unimplemented"})
 	}
 
 }
 func modServeAPIGetForm() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "API is unimplemented"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "API is unimplemented"})
 	}
 
 }
 func modServeAPIGetResponse() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "API is unimplemented"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "API is unimplemented"})
 	}
 }
 
@@ -369,23 +372,21 @@ func userServeForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// /:formname/:formnum
 		form_name := c.Param("formname")
-		form_num, err := strconv.Atoi(c.Param("formnum"))
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"msg": "URL is malformed"})
+      tools.AbortWithJSONError( c , http.StatusBadRequest , err.Error() , gin.H{"error": "URL is malformed"})
 			return
 		}
-		form_data, err := returner.GetFormByNameAndID(db, form_name, int64(form_num))
+		form_data, err := returner.GetFormByNameAndID(db, form_name, form_num)
 		var rebuild_group former.FormConstruct
 		err = json.Unmarshal([]byte(form_data.FieldJSON), &rebuild_group)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve source file"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Could not retrieve source file"})
 			return
 		}
 		template, err := templater.ReturnFilledTemplate(env, "user-views/user-form.twig", map[string]stick.Value{"version": globals.ProjectVersion, "form": rebuild_group})
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
 		serveTwigTemplate(c, http.StatusOK, template)
@@ -396,7 +397,7 @@ func userServeForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 func modServeDelete() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain")
-		c.String(http.StatusNotAcceptable, "For safety purposes, you can only submit deletes through the listing\nImagine if someone gave you a link shortener that redirects to this URL and caused you to delete someone's form...")
+		c.JSON(http.StatusNotAcceptable, gin.H{"error": "You can only submit deletes through the listing."})
 	}
 }
 
@@ -410,14 +411,12 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 		if err != nil && json == "" {
 			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "DB Error"})
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 				return
 			}
 			serveTwigTemplate(c, http.StatusInternalServerError, template)
 		} else if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Internal error, Get stored"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
 		}
 		ip := c.ClientIP()
 		param_pass := c.PostForm("password")
@@ -427,13 +426,12 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 			if json == "" {
 				template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "Invalid Password"})
 				if err != nil {
-					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+          tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 					return
 				}
 				serveTwigTemplate(c, http.StatusUnauthorized, template)
 			} else if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Internal error, Get stored"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
 			}
 		} else {
 			session_key_unencrypted := "ADMIN" + param_pass + strconv.Itoa(int(time.Now().Unix()))
@@ -445,15 +443,13 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 			if err != nil {
 				if json == "" {
 					template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "Login Storage Error"})
-					fmt.Errorf(err.Error())
 					if err != nil {
-						c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Template generation failed"})
+            tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 						return
 					}
 					serveTwigTemplate(c, http.StatusInternalServerError, template)
 				} else if err != nil {
-					fmt.Errorf(err.Error())
-					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Login Storage Error"})
+					tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Login Storage Error"})
 				}
 			}
 			if json == "" {
@@ -461,7 +457,7 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 				c.SetCookie("verified", session_key_safe, int(30*24*60*60), "/", cfg.SiteName, true, true)
 				c.Redirect(http.StatusMovedPermanently, "/mod")
 			} else {
-				c.AbortWithStatusJSON(http.StatusOK, gin.H{"message": "Success"})
+        c.JSON(http.StatusOK , gin.H{"message": "Success"})
 			}
 		}
 	}
@@ -473,19 +469,22 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 		var file_map map[string]former.MultipartFile = make(map[string]former.MultipartFile)
 
 		form_name := c.Param("formname")
-		form_num, err := strconv.Atoi(c.Param("formnum"))
-
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
+    if err != nil{
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "URL malformed"})
+      return
+    }
 		//Get a form
-		form, err := tools.GetFormOfID(db, int64(form_num))
+		form, err := returner.GetFormOfID(db, form_num)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue getting form"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue getting form"})
+      return
 		}
 		var form_construct former.FormConstruct
 		err = json.Unmarshal([]byte(form.FieldJSON), &form_construct)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue unmarshalling input"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue unmarshalling input"})
+      return
 		}
 
 		responder.FillMapWithPostParams(c, response_map, form_construct)
@@ -493,7 +492,7 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 
 		response_form := former.FormResponse{
 			FormName:     form_name,
-			RelationalID: int64(form_num),
+			RelationalID: form_num,
 			ResponderID:  c.ClientIP(),
 			Responses:    response_map,
 			FileObjects:  file_map,
@@ -504,8 +503,7 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 		var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(response_form.FileObjects, form_construct)
 		issue_array := append(text_issue_array, file_issue_array...)
 		if len(issue_array) != 0 {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "There are mistakes with the form", "error-list": issue_array})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "There are mistakes with the form", "error-list": issue_array})
 			return
 		}
 
@@ -522,8 +520,7 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 
 		err = responder.CreateResponderFolder(globals.RootDirectory, response_form)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue creating responder data"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue creating responder data"})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
@@ -531,17 +528,15 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 		}
 		error_list := tools.WriteFilesFromMultipart(globals.RootDirectory, response_form)
 		if len(error_list) != 0 {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue creating responder data"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue creating responder data"})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
 			return
 		}
-		err = tools.WriteResponsesToJSONFile(globals.RootDirectory, response_form)
+		err = responder.WriteResponsesToJSONFile(globals.RootDirectory, response_form)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue creating responder data"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue creating responder data"})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
@@ -549,26 +544,23 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 		}
 		response_fields, err := responder.FormResponseToDBFormat(response_form)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue creating responder DB data"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue creating responder DB data"})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
 			return
 		}
 		if len(response_fields.ResponseJSON) > 65000 {
-			fmt.Errorf("len(response_fields.FieldJSON) > 65000")
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "There is too much data in your form!"})
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , "len(response_fields.FieldJSON) > 65000 !" , gin.H{"error": "There is too much data in your form!"})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
 			return
 		}
 		// A combination of Responses and File Locations listing a URL for file download where it will be served
-		err = tools.StoreResponseToDB(db, response_fields)
+		err = responder.StoreResponseToDB(db, response_fields)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue creating responder DB data "})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue creating responder DB data "})
 			if !edit_mode {
 				destroyer.UndoResponse(db, response_form, response_form.ResponderID, globals.RootDirectory)
 			}
@@ -588,26 +580,23 @@ func modPostCreateForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.Handler
 		form_construct_raw := c.PostForm("form-construct-json")
 		var form_construct former.FormConstruct
 		err := json.Unmarshal([]byte(form_construct_raw), &form_construct)
-
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue unmarshalling input. Did you fill out everything?"})
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue unmarshalling input. Did you fill out everything?"})
+      return
 		}
 		issue_list := builder.ValidateForm(db, form_construct)
 		if len(issue_list) > 0 {
-			fmt.Printf("%+v\n", issue_list)
-			c.AbortWithStatusJSON(http.StatusNotAcceptable, gin.H{"error": "Invalid inputs", "error-list": issue_list})
-			return
+      tools.AbortWithJSONError( c , http.StatusNotAcceptable , fmt.Sprintf("%+v\n", issue_list) , gin.H{"error": "Invalid inputs", "error-list": issue_list})
+      return
 		} else {
 			insertable_form, err := builder.MakeFormWritable(form_construct)
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with Inputs"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with Inputs"})
 				return
 			}
 			last_id, err := builder.StoreForm(db, insertable_form)
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with DB writing"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with DB writing"})
 				return
 			}
 			ck_err := builder.CheckFormDirectoryExists(form_construct, globals.RootDirectory)
@@ -615,14 +604,14 @@ func modPostCreateForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.Handler
 				err = destroyer.UndoFormDirectory(form_construct, globals.RootDirectory)
 				if err != nil {
 					destroyer.UndoForm(db, insertable_form.Name, globals.RootDirectory)
-					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with Folder writing"})
+          tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with Folder writing"})
 					return
 				}
 			}
 			err = builder.CreateFormDirectory(form_construct, globals.RootDirectory)
 			if err != nil {
 				destroyer.UndoForm(db, insertable_form.Name, globals.RootDirectory)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with Folder writing"})
+        tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with Folder writing"})
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{"message": "Form written", "URL": "https://" + cfg.SiteName + "/public/forms/" + form_construct.StorageName() + "/" + strconv.Itoa(last_id)})
@@ -633,45 +622,43 @@ func modPostCreateForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.Handler
 }
 func modPostEditForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		form_num, _ := strconv.Atoi(c.Param("formnum"))
+		form_num, _ := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 
-		original_form, err := tools.GetFormOfID(db, int64(form_num))
+		original_form, err := returner.GetFormOfID(db, form_num)
 		var original_form_construct former.FormConstruct
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue reading DB"})
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue reading DB"})
+      return
 		}
 		err = json.Unmarshal([]byte(original_form.FieldJSON), &original_form_construct)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue unmarshalling input"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue unmarshalling input"})
+      return
 		}
 
 		form_construct_raw := c.PostForm("form-construct-json")
 		var form_construct former.FormConstruct
 		err = json.Unmarshal([]byte(form_construct_raw), &form_construct)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Issue unmarshalling input"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue unmarshalling input"})
+      return
 		}
 		issue_list := builder.ValidateFormEdit(form_construct, original_form_construct)
 		if len(issue_list) > 0 {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusNotAcceptable, gin.H{"error": "Invalid inputs", "error-list": issue_list})
+			tools.AbortWithJSONError( c , http.StatusNotAcceptable , err.Error() , gin.H{"error": "Invalid inputs", "error-list": issue_list})
 			return
 		} else {
 			insertable_form, err := builder.MakeFormWritable(form_construct)
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with Inputs"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with Inputs"})
 				return
 			}
-			err = builder.UpdateForm(db, int64(form_num), insertable_form)
+			err = builder.UpdateForm(db, form_num, insertable_form)
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Server Issue with DB writing"})
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Server Issue with DB writing"})
 				return
 			}
-			c.JSON(http.StatusOK, gin.H{"message": "Form was altered", "URL": "https://" + cfg.SiteName + "/public/forms/" + form_construct.StorageName() + "/" + strconv.Itoa(form_num)})
+			c.JSON(http.StatusOK, gin.H{"message": "Form was altered", "URL": "https://" + cfg.SiteName + "/public/forms/" + form_construct.StorageName() + "/" + strconv.Itoa(int(form_num))})
 		}
 	}
 
@@ -679,15 +666,15 @@ func modPostEditForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.HandlerFu
 func modPostDeleteForm(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_name := c.Param("formname")
-		form_num, err := strconv.Atoi(c.Param("formnum"))
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Malformed URL"})
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Malformed URL"})
+      return
 		}
-		err = destroyer.DeleteForm(db, form_name, int64(form_num))
+		err = destroyer.DeleteForm(db, form_name, form_num)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Issue on delete"})
+      tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() ,  gin.H{"error": "Issue on delete"})
+      return
 		} else {
 			c.JSON(http.StatusOK, gin.H{"message": "Deleted " + c.Param("formname") + " No. " + c.Param("formnum")})
 		}
@@ -696,13 +683,12 @@ func modPostDeleteForm(db *sql.DB) gin.HandlerFunc {
 func modPostDeleteResponse(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_name := c.Param("formname")
-		response_number, err := strconv.Atoi(c.Param("respnum"))
+		response_number, err := strconv.ParseInt(c.Param("respnum") , 10 , 64)
 		if err != nil {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "URL malformed"})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "URL malformed"})
 			return
 		}
-		response_fields, err := tools.GetResponseByID(db, int64(response_number))
+		response_fields, err := returner.GetResponseByID(db, int64(response_number))
 		err = destroyer.DeleteResponse(db, globals.RootDirectory, int64(response_number), form_name, response_fields.Identifier)
 		if err != nil {
 			fmt.Errorf(err.Error())
@@ -725,14 +711,12 @@ func authenticationMiddleware(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 
 		err = CheckCookieValid(db, cookie_verification, ip)
 		if err != nil && json != "" {
-			fmt.Errorf(err.Error())
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Unauthorized"})
+			tools.AbortWithJSONError( c , http.StatusUnauthorized , err.Error() , gin.H{"error": "Unauthorized"})
 		} else if err != nil {
 			// ReturnFilledTemplate(env *stick.Env, template_path string, value_map map[string]stick.Value) (string , error)
 			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion})
 			if err != nil {
-				fmt.Errorf(err.Error())
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Unauthorized - Login Form Tenmplate Error"})
+				tools.AbortWithJSONError( c , http.StatusUnauthorized , err.Error() , gin.H{"error": "Unauthorized - Login Form Tenmplate Error"})
 				return
 			}
 			c.Header("Content-Type", "text/html")

@@ -52,34 +52,6 @@ func FetchPassword(db *sql.DB) (types.PasswordsDBFields, error) {
 	return pass, err
 }
 
-func StoreFormToDB(db *sql.DB, db_form types.FormDBFields) error {
-	// Unique name prevents duplicate entries while auto-incremented ID makes for easy foreign keys
-	_, err := db.Exec("INSERT INTO forms VALUES( NULL , ? , ? , ? )", db_form.Name, db_form.FieldJSON, db_form.UpdatedAt)
-	return err
-}
-func GetFormOfID(db *sql.DB, id int64) (types.FormDBFields, error) {
-	q := db.QueryRow("SELECT * FROM forms WHERE id=?", id)
-	var db_form types.FormDBFields
-	err := q.Scan(&db_form.ID, &db_form.Name, &db_form.FieldJSON, &db_form.UpdatedAt)
-	return db_form, err
-}
-func GetFormOfName(db *sql.DB, name string) (types.FormDBFields, error) {
-	q := db.QueryRow("SELECT * FROM forms WHERE name=?", name)
-	var db_form types.FormDBFields
-	err := q.Scan(&db_form.ID, &db_form.Name, &db_form.FieldJSON, &db_form.UpdatedAt)
-	return db_form, err
-}
-
-func GetResponseByID(db *sql.DB, id int64) (types.ResponseDBFields, error) {
-	q := db.QueryRow("SELECT * FROM responses WHERE id=?", id)
-	var db_response types.ResponseDBFields
-	err := q.Scan(&db_response.ID, &db_response.FK_ID, &db_response.Identifier, &db_response.ResponseJSON, &db_response.SubmittedAt)
-	return db_response, err
-}
-func StoreResponseToDB(db *sql.DB, db_response types.ResponseDBFields) error {
-	_, err := db.Exec("INSERT INTO responses VALUES( NULL , ? , ? , ? , ? )", db_response.FK_ID, db_response.Identifier, db_response.ResponseJSON, db_response.SubmittedAt)
-	return err
-}
 func GetLastIndex(db *sql.DB, table string) (int, error) {
 	q := db.QueryRow("SELECT LAST_INSERT_ID()")
 	var db_response int

@@ -6,7 +6,6 @@ import (
 	// "fmt"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 )
 
 func TestCompressionOfGivenForm(t *testing.T) {
@@ -54,7 +53,7 @@ func TestCompressionOfGivenForm(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A tar.gz file containing the CSV, as it has zipped the entire form directory together
-	err = tools.CreateDownloadableForGivenForm(initialization_folder, second_store)
+	err = returner.CreateDownloadableForGivenForm( second_store , initialization_folder)
 	if err != nil {
 		t.Fatal(err)
 	}

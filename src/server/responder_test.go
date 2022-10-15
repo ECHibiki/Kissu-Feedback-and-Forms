@@ -55,7 +55,7 @@ func TestInputStorage(t *testing.T) {
 	}
 
 	//Get a form
-	form, err := tools.GetFormOfID(db, demo_response.RelationalID)
+	form, err := returner.GetFormOfID(db, demo_response.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestInputStorage(t *testing.T) {
 	}
 
 	// A combination of Responses and File Locations listing a URL for file download where it will be served
-	err = tools.WriteResponsesToJSONFile(initialization_folder, demo_response)
+	err = responder.WriteResponsesToJSONFile(initialization_folder, demo_response)
 	if err != nil {
 		t.Fatal("Writting JSON failed")
 	}
@@ -121,7 +121,7 @@ func TestInputStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal("responses.json error during parse")
 	}
-	original_json_resp := tools.ConvertFormResponseToJSONFormResponse(initialization_folder, demo_response)
+	original_json_resp := responder.ConvertFormResponseToJSONFormResponse(initialization_folder, demo_response)
 	testing_json_r, err := json.Marshal(json_resp)
 	if err != nil {
 		t.Fatal(err)
@@ -139,7 +139,7 @@ func TestInputStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A combination of Responses and File Locations listing a URL for file download where it will be served
-	err = tools.StoreResponseToDB(db, demo_response_db_fields)
+	err = responder.StoreResponseToDB(db, demo_response_db_fields)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestInputRejection(t *testing.T) {
 	}
 
 	//Get a form
-	form, err := tools.GetFormOfID(db, demo_response_fail.RelationalID)
+	form, err := returner.GetFormOfID(db, demo_response_fail.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestIllegalFName(t *testing.T) {
 		},
 	}
 	//Get a form
-	form, err := tools.GetFormOfID(db, demo_response_fail.RelationalID)
+	form, err := returner.GetFormOfID(db, demo_response_fail.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,7 +354,7 @@ func TestSamePersonReplyingTwice(t *testing.T) {
 		FileObjects: files,
 	}
 
-	form, err := tools.GetFormOfID(db, new_response.RelationalID)
+	form, err := returner.GetFormOfID(db, new_response.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -408,7 +408,7 @@ func TestSamePersonReplyingTwice(t *testing.T) {
 
 	responder.CreateResponderFolder(initialization_folder, new_response)
 	tools.WriteFilesFromMultipart(initialization_folder, new_response)
-	tools.WriteResponsesToJSONFile(initialization_folder, new_response)
+	responder.WriteResponsesToJSONFile(initialization_folder, new_response)
 	new_response_db_fields, err := responder.FormResponseToDBFormat(new_response)
 	if err != nil {
 		t.Fatal(err)
@@ -421,7 +421,7 @@ func TestSamePersonReplyingTwice(t *testing.T) {
 	if string(old_resp_marshal) == string(new_resp_marshal) {
 		t.Fatal("The was no update")
 	}
-	err = tools.StoreResponseToDB(db, new_response_db_fields)
+	err = responder.StoreResponseToDB(db, new_response_db_fields)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -465,7 +465,7 @@ func UpdateToAnonOption(t *testing.T) {
 		FileObjects: files,
 	}
 
-	form, err := tools.GetFormOfID(db, new_response.RelationalID)
+	form, err := returner.GetFormOfID(db, new_response.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,7 +548,7 @@ func TestExcessiveInputLen(t *testing.T) {
 		},
 	}
 
-	form, err := tools.GetFormOfID(db, new_response.RelationalID)
+	form, err := returner.GetFormOfID(db, new_response.RelationalID)
 	if err != nil {
 		t.Fatal(err)
 	}

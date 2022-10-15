@@ -6,7 +6,6 @@ import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/templater"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"strings"
 	"testing"
 )
@@ -31,12 +30,12 @@ func TestRetrieval(t *testing.T) {
 
 	var insertable_form_id, insertable_form_name former.FormConstruct
 
-	insertable_form_id_db, err := tools.GetFormOfID(db, 1)
+	insertable_form_id_db, err := returner.GetFormOfID(db, 1)
 	if err != nil {
 		panic(err)
 	}
 	json.Unmarshal([]byte(insertable_form_id_db.FieldJSON), &insertable_form_id)
-	insertable_form_name_db, err := tools.GetFormOfName(db, demo_form_name_check_assumed_storage_name)
+	insertable_form_name_db, err := returner.GetFormOfName(db, demo_form_name_check_assumed_storage_name)
 	if err != nil {
 		panic(err)
 	}

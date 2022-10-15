@@ -6,7 +6,6 @@ import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/destroyer"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"os"
 	"testing"
 )
@@ -41,7 +40,7 @@ func TestDeleteOfForm(t *testing.T) {
 		t.Fatal("A response to a delte form lingers", r)
 	}
 
-	f, err := tools.GetFormOfID(db, 2)
+	f, err := returner.GetFormOfID(db, 2)
 	if err == nil {
 		t.Fatal("deleted form still exists", f)
 	}
@@ -50,7 +49,7 @@ func TestDeleteOfForm(t *testing.T) {
 		t.Fatal("Form deletes should retain old files in case of mistakes ", second_store, " missing")
 	}
 
-	f, err = tools.GetFormOfID(db, 1)
+	f, err = returner.GetFormOfID(db, 1)
 	if err != nil {
 		t.Fatal("Error on form that should still exist", r)
 	}
@@ -85,7 +84,7 @@ func TestDeleteOfResponse(t *testing.T) {
 
 	destroyer.DeleteResponse(db, initialization_folder, 2, second_store, "192.168.1.2")
 
-	_, err = tools.GetFormOfID(db, int64(1))
+	_, err = returner.GetFormOfID(db, int64(1))
 	if err != nil {
 		t.Error("Error on form that should still exist")
 	}
@@ -93,7 +92,7 @@ func TestDeleteOfResponse(t *testing.T) {
 	if err != nil {
 		t.Error("An unrelated form directory was removed")
 	}
-	_, err = tools.GetFormOfID(db, int64(2))
+	_, err = returner.GetFormOfID(db, int64(2))
 	if err != nil {
 		t.Error("Error on form that should still exist")
 	}
@@ -138,7 +137,7 @@ func UndoTest(t *testing.T) {
 	prebuilder.DoFormInitialization(first_name, "a-simple-identifier", db, initialization_folder)
 
 	destroyer.UndoForm(db, first_store, initialization_folder)
-	_, err := tools.GetFormOfID(db, int64(1))
+	_, err := returner.GetFormOfID(db, int64(1))
 	if err == nil {
 		t.Error("Form should be removed")
 	}
@@ -154,13 +153,13 @@ func DirectoryUndoTest(t *testing.T) {
 	first_name := "Test form 1"
 	first_store := "Test_form_1"
 	prebuilder.DoFormInitialization(first_name, "a-simple-identifier", db, initialization_folder)
-	f, err := tools.GetFormOfID(db, int64(1))
+	f, err := returner.GetFormOfID(db, int64(1))
 	var form_construct former.FormConstruct
 	json.Unmarshal([]byte(f.FieldJSON), &form_construct)
 
 	destroyer.UndoFormDirectory(form_construct, initialization_folder)
 
-	_, err = tools.GetFormOfID(db, int64(1))
+	_, err = returner.GetFormOfID(db, int64(1))
 	if err != nil {
 		t.Error("Form should not be removed")
 	}

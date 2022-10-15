@@ -249,14 +249,18 @@ func ValidateFormEdit(replace former.FormConstruct, base former.FormConstruct) (
 }
 
 func StoreForm(db *sql.DB, db_form types.FormDBFields) (int, error) {
-	err := tools.StoreFormToDB(db, db_form)
+	err := StoreFormToDB(db, db_form)
 	if err != nil {
 		return 0, err
 	}
 	return tools.GetLastIndex(db, "forms")
-
 }
 func UpdateForm(db *sql.DB, index int64, db_form types.FormDBFields) error {
 	_, err := db.Exec("UPDATE forms SET field_json = ? , updated_at = ? WHERE id = ?", db_form.FieldJSON, db_form.UpdatedAt, index)
+	return err
+}
+func StoreFormToDB(db *sql.DB, db_form types.FormDBFields) error {
+	// Unique name prevents duplicate entries while auto-incremented ID makes for easy foreign keys
+	_, err := db.Exec("INSERT INTO forms VALUES( NULL , ? , ? , ? )", db_form.Name, db_form.FieldJSON, db_form.UpdatedAt)
 	return err
 }

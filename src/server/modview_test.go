@@ -8,7 +8,6 @@ import (
 	// "github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 	// "github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 )
 
@@ -30,9 +29,9 @@ func TestListAllForms(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	form1, err := tools.GetFormOfID(db, 1)
+	form1, err := returner.GetFormOfID(db, 1)
 	form1.FieldJSON = ""
-	form2, err := tools.GetFormOfID(db, 2)
+	form2, err := returner.GetFormOfID(db, 2)
 	form2.FieldJSON = ""
 	forms_1and2 := []types.FormDBFields{form1, form2}
 
@@ -87,8 +86,8 @@ func TestListResponsesToForm(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	reply_1, _ := tools.GetResponseByID(db, 2)
-	reply_2, _ := tools.GetResponseByID(db, 3)
+	reply_1, _ := returner.GetResponseByID(db, 2)
+	reply_2, _ := returner.GetResponseByID(db, 3)
 	replies_test := []types.ResponseDBFields{reply_2, reply_1}
 	replies_test_json, err := json.Marshal(replies_test)
 
@@ -120,7 +119,7 @@ func TestDisplaySingleResponse(t *testing.T) {
 	prebuilder.ReplyToForm(2, demo_form_assumed_storage_name, "192.168.1.1", db, initialization_folder)
 	prebuilder.ReplyToForm(2, demo_form_assumed_storage_name, "192.168.1.2", db, initialization_folder)
 
-	// add in something important related to form responses to make it different from tools.GetResponseByID...
+	// add in something important related to form responses to make it different from returner.GetResponseByID...
 	reply, err := returner.GetResponseByID(db, 2)
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +128,7 @@ func TestDisplaySingleResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reply_test, err := tools.GetResponseByID(db, 2)
+	reply_test, err := returner.GetResponseByID(db, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
