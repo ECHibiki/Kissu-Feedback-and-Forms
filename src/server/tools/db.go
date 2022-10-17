@@ -28,15 +28,19 @@ func BuildDBTables(db *sql.DB) {
 
 func QuickDBConnect(cfg types.ConfigurationSettings) *sql.DB {
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s",
-		cfg.DBUserName,
-		cfg.DBCredentials,
-		cfg.DBAddr,
-		cfg.DBName,
-	),
+			cfg.DBUserName,
+			cfg.DBCredentials,
+			cfg.DBAddr,
+			cfg.DBName,
+		),
 	)
 	if err != nil {
 		panic("DB connect error")
 	}
+	db.SetConnMaxLifetime(0)
+	db.SetConnMaxIdleTime(0)
+	db.SetMaxOpenConns(0)
+	db.SetMaxIdleConns(5)
 	return db
 }
 
