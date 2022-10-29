@@ -94,6 +94,9 @@ Create a React library which will initialize multiple types of displays dependin
     - password hashing(rate limitting on bcrypt)
     - db.Exec inputs
     - Deep read on Gin
+ - Use another templating language
+ - Use Another regex language ( https://nightfall.ai/best-go-regex-library )
+ - Have a tests folder or place tests in related packages
  - Testing variables should be in a single file and reused
  - Turn some of these files into an extended Gin library for future projects
  - Read on Golang time library
@@ -105,6 +108,7 @@ Create a React library which will initialize multiple types of displays dependin
  - Expand the degree of user input validation
  - DB character limit errors expressed to the user
  - Password auth methods
+ - Golang MySQL db settings
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created
