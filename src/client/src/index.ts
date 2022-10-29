@@ -25,6 +25,58 @@ export function helloWorld() {
   console.log("hello client");
 }
 
+export function dropdownList(activator:HTMLAnchorElement, id:string) : boolean{
+  let head = document.getElementById("container-" + id);
+  let reply_container = head.getElementsByClassName("item-replies").item(0)
+
+  if(activator.firstChild.textContent == "▶"){
+    activator.firstChild.textContent = "( ...Loading... )";
+    let x = new XMLHttpRequest()
+    x.open("GET" , "/mod/api/form/" + id );
+    x.onload = function(e:any){
+      activator.firstChild.textContent = "▼";
+      let response_json:any;
+      try {
+        response_json = JSON.parse(e.target.responseText)
+        console.log(response_json , e)
+      } catch (error) {
+        reply_container.innerHTML = `Hard server crash<BR/><TEXTAREA>${error.toString()}</TEXTAREA>`
+        return
+      }
+      if (response_json.error){
+        reply_container.innerHTML = response_json.error
+      } else{
+        reply_container.innerHTML = buildDropdownResponse(reply_container as HTMLDivElement, response_json);
+      }
+    }
+    x.onerror= function(){
+      reply_container.innerHTML = `Server Issue`;
+    }
+    x.send();
+  } else if(activator.firstChild.textContent == "▼"){
+    (activator.firstChild).textContent = "▶";
+    reply_container.innerHTML = "";
+  }
+  return false;
+}
+
+function buildDropdownResponse(container:HTMLDivElement , json:any) : string{
+  let html = `<UL>${
+    (() => {
+      if (!json.formatted_replies){
+        return "<LI>Empty Set</LI>"
+      }
+
+      let list = "";
+      json.formatted_replies.forEach((r) => {
+        list += `<LI>${r}</LI>`;
+      });
+      return list
+    })()
+  }</UL>`;
+  return html
+}
+
 export function submitUserPost(form){
   let fields = new FormData(form)
   fields.append("json" , "1")

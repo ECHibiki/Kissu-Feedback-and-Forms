@@ -39,6 +39,6 @@
   {% endfor %}
 
   {% for group in field.FormFields %}
-    {% include 'user-views/user-form-group.twig' with {'field':group} %}
+    {% include 'mod-views/mod-reply-item.twig' with {'field':group , 'reply':reply} %}
   {% endfor %}
 </DIV>

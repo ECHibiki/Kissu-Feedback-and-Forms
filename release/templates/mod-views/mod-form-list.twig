@@ -11,11 +11,16 @@
     <UL>
       {% for form in form_list %}
       <LI id="row-{{ form.Name }}-{{ form.ID }}" title="Unix UpdatedAt: {{ form.UpdatedAt }}">
-        <SPAN><A href="/mod/view/{{ form.ID }}">{{ form.Name }} - RESPONSES</A></SPAN>
-        <SPAN><A href="/public/forms/{{ form.Name }}/{{ form.ID }}">PUBLIC</A></SPAN>
-        <SPAN><A href="/mod/download/{{ form.Name }}/{{ form.ID }}" target="_blank">DOWNLOAD</A></SPAN>
-        <SPAN><A href="/mod/edit/{{ form.ID }}">EDIT</A></SPAN>
-        <SPAN><A href="/mod/form/delete/{{ form.Name }}/{{ form.ID }}" onclick="return FormLibrary.postDeleteForm('{{ form.Name }}' , '{{ form.ID }}')" >DELETE</A></SPAN>
+        <DIV class="item-container" id="container-{{ form.ID }}">
+          <DIV class="item-toggle"><SPAN><A href="/mod/view/{{ form.ID }}" onclick="return FormLibrary.dropdownList(this, '{{ form.ID }}')"><SPAN>▶</SPAN> {{ form.Name }} </A></SPAN></DIV>
+          <DIV class="item-controls">
+            <SPAN><A href="/public/forms/{{ form.Name }}/{{ form.ID }}">PUBLIC</A></SPAN>
+            <SPAN><A href="/mod/download/{{ form.Name }}/{{ form.ID }}" target="_blank">DOWNLOAD</A></SPAN>
+            <SPAN><A href="/mod/edit/{{ form.ID }}">EDIT</A></SPAN>
+            <SPAN><A href="/mod/form/delete/{{ form.Name }}/{{ form.ID }}" onclick="return FormLibrary.postDeleteForm('{{ form.Name }}' , '{{ form.ID }}')" >DELETE</A></SPAN>
+          </DIV>
+          <DIV class="item-replies"></DIV>
+        </DIV>
       </LI>
       {% endfor %}
     </UL>

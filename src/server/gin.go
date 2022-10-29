@@ -93,13 +93,7 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *g
 			// Retrieve various forms
 			api_group := mod_group.Group("api/")
 			{
-				// API calls to return details for given forms
-				// Might not use these afterall and go for a classical HTML interface
-				// Flesh out if mod pages are to be dynamic ReactJS
-				api_group.GET("/all", modServeAPIGetAll())
-				api_group.GET("/form/:formnum", modServeAPIGetForm())
-				api_group.GET("/response/:respnum", modServeAPIGetResponse())
-
+				api_group.GET("/form/:formnum", modServeAPIGetForm(db , stick))
 			}
 
 		}
@@ -366,9 +360,59 @@ func modServeAPIGetAll() gin.HandlerFunc {
 	}
 
 }
-func modServeAPIGetForm() gin.HandlerFunc {
+func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "API is unimplemented"})
+		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
+		if err != nil {
+			fmt.Printf("%s" , err.Error())
+			if err != nil {
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Failed to get data"})
+				return
+			}
+		}
+
+		form_replies, err := returner.GetRepliesToForm(db, form_num)
+		if err != nil {
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Malformed request"})
+			return
+		}
+		form_data, err := returner.GetFormOfID(db, form_num)
+		if err != nil {
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Malformed request"})
+			return
+		}
+
+		var form_construct former.FormConstruct
+		var parse_list []string
+		err = json.Unmarshal([]byte(form_data.FieldJSON), &form_construct)
+		if err != nil {
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing form"})
+			return
+		}
+
+		for _, r := range form_replies {
+			var r_map map[string]string
+			err = json.Unmarshal([]byte(r.ResponseJSON), &r_map)
+			if err != nil {
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing a reply"})
+				return
+			}
+			r_map["ID"] = strconv.Itoa(int(r.ID))
+			r_map["FK_ID"] = strconv.Itoa(int(r.FK_ID))
+			r_map["Identifier"] = r.Identifier
+			r_map["SubmittedAt"] = strconv.Itoa(int(r.SubmittedAt))
+
+				// {% include 'mod-views/mod-reply-body.twig' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
+			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-reply-body.twig", map[string]stick.Value{
+				"storagename": form_construct.StorageName(), "reply": r_map , "form": form_construct,
+			})
+			if err != nil {
+				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing template"})
+				return
+			}
+			parse_list = append(parse_list, template)
+		}
+		c.JSON(http.StatusOK, gin.H{ "formatted_replies": parse_list})
 	}
 
 }
