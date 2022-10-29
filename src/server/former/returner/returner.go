@@ -138,7 +138,7 @@ func CreateInstancedCSVForGivenForm(db *sql.DB, id int64, initialization_folder 
 		}
 		for k, v := range response {
 			if _, exists := field_map[k]; !exists {
-				fmt.Errorf("%s %s Does not exist on field list", k, v)
+				fmt.Printf("%s %s Does not exist on field list", k, v)
 				continue
 			}
 

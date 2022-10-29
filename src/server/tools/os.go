@@ -2,6 +2,7 @@ package tools
 
 import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
+	"path/filepath"
 	"strings"
   "errors"
 	"bufio"
@@ -38,8 +39,13 @@ func CheckSafeDirectoryName(dir string) bool {
 func WriteFilesFromMultipart(root_dir string, response_struct former.FormResponse) []error {
 	storage_dir := root_dir + "/data/" + response_struct.FormName + "/" + response_struct.ResponderID + "/files/"
 	var err_list []error = []error{}
-	for field_name, file_object := range response_struct.FileObjects {
-		fname := field_name + "-" + file_object.Header.Filename
+	for _, file_object := range response_struct.FileObjects {
+		fname := file_object.Header.Filename
+		if len(fname) > 255 {
+			ext := filepath.Ext(fname)
+			base := filepath.Base(fname)
+			fname = base[:255 - len(ext)] + ext
+		}
 		if strings.Contains(fname, "/") {
 			LogError(storage_dir, storage_dir+fname)
 			err_list = append(err_list, errors.New("File "+fname+" contained illegal characters"))

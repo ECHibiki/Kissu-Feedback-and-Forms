@@ -1,16 +1,17 @@
 package builder
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
-	"os"
-	"regexp"
+	"encoding/json"
+	"database/sql"
 	"strconv"
+	"regexp"
+	"math"
 	"time"
+	"fmt"
+	"os"
 )
 
 func ConstructFormObject(inputs map[string]string) former.FormConstruct {
@@ -76,6 +77,11 @@ func ValidateForm(db *sql.DB, form former.FormConstruct) (error_list []former.Fa
 		error_list = append(error_list, character_errors...)
 	}
 
+	property_errors := checkValidFieldValues(form)
+	if len(property_errors) > 0 {
+		error_list = append(error_list, property_errors...)
+	}
+
 	// uniqueness errors through all other chekcs into confusion
 	// allowing for other errors to display isn't important... not even golang shows all error types at once
 	// this limitation, I guess, issue will apply to situations where a submits without the client
@@ -87,6 +93,40 @@ func ValidateForm(db *sql.DB, form former.FormConstruct) (error_list []former.Fa
 	if len(struct_errors) > 0 {
 		error_list = append(error_list, struct_errors...)
 	}
+	return error_list
+}
+
+func checkValidFieldValues(form former.FormConstruct) (error_list []former.FailureObject){
+	if len(form.FormFields) == 0 {
+		return []former.FailureObject{}
+	}
+	var subgroup_stack []former.FormGroup
+	subgroup_stack = append(subgroup_stack, form.FormFields...)
+	// fail location identified by an ID
+	for len(subgroup_stack) > 0 {
+		item := subgroup_stack[len(subgroup_stack)-1]
+		subgroup_stack = subgroup_stack[:len(subgroup_stack)-1]
+		if len(item.Respondables) != 0 {
+			for _, r := range item.Respondables {
+				switch r.Object.(type) {
+				case former.FileInput:
+					o := r.Object.(former.FileInput)
+					_ , err := regexp.Compile(o.AllowedExtRegex)
+					if err != nil {
+						error_list = append(error_list, former.FailureObject{former.InvalidExtRegexMessage, former.InvalidExtRegexCode, o.GetName()})
+					}
+					if o.MaxSize > 10 * int64(math.Pow(10, 6)) { // 100mb
+						error_list = append(error_list, former.FailureObject{former.InvalidFileSizeMessage, former.InvalidFileSizeCode, o.GetName()})
+					}
+				}
+			}
+		}
+		if len(item.SubGroups) != 0 {
+			// add children to the stack
+			subgroup_stack = append(subgroup_stack, item.SubGroups...)
+		}
+	}
+
 	return error_list
 }
 
@@ -234,12 +274,18 @@ func ValidateFormEdit(replace former.FormConstruct, base former.FormConstruct) (
 		error_list = append(error_list, character_errors...)
 	}
 
+	property_errors := checkValidFieldValues(replace)
+	if len(property_errors) > 0 {
+		error_list = append(error_list, property_errors...)
+	}
+
 	// uniqueness errors through all other chekcs into confusion
 	// allowing for other errors to display isn't important... not even golang shows all error types at once
 	// this limitation, I guess, issue will apply to situations where a submits without the client
 	if len(uniqueness_errors) > 0 {
 		return error_list
 	}
+
 
 	struct_errors := checkValidFormStructure(replace)
 	if len(struct_errors) > 0 {

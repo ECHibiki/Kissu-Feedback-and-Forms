@@ -207,39 +207,39 @@ func TestInputRejection(t *testing.T) {
 	issue_array := append(text_issue_array, file_issue_array...)
 	// It should pass so write to the propper locations
 	if len(issue_array) != 8 {
-		t.Error("Error count mismatched, wants 8 has ")
+		t.Error("Error count mismatched, wants 8 has " , len(issue_array) , issue_array)
 	}
 	for i, e := range issue_array {
 		var fm former.FormValidationError
 		var fc former.FormErrorCode
 		if e.FailPosition == "Test-TA" {
-			fm = former.ResponseMissingMessage
-			fc = former.ResponseMissingCode
+			fm = former.InputResponseMissingMessage
+			fc = former.InputResponseMissingCode
 		} else if e.FailPosition == "Test-GI" {
-			fm = former.ResponseMissingMessage
-			fc = former.ResponseMissingCode
+			fm = former.InputResponseMissingMessage
+			fc = former.InputResponseMissingCode
 		} else if e.FailPosition == "Test-Chk-SG" {
-			fm = former.ResponseMissingMessage
-			fc = former.ResponseMissingCode
+			fm = former.InputResponseMissingMessage
+			fc = former.InputResponseMissingCode
 		} else if e.FailPosition == "Test-Chk-SG-9999" {
 			fm = former.InvalidInputMessage
 			fc = former.InvalidInputCode
 		} else if e.FailPosition == "Test-rdo-SG" {
-			fm = former.InvalidSelectionValueMessage
-			fc = former.InvalidSelectionValueCode
+			fm = former.InvalidInputSelectionValueMessage
+			fc = former.InvalidInputSelectionValueCode
 
 		} else if e.FailPosition == "Test-optGrp" {
-			fm = former.InvalidOptionValueMessage
-			fc = former.InvalidOptionValueCode
+			fm = former.InvalidInputOptionValueMessage
+			fc = former.InvalidInputOptionValueCode
 		} else if e.FailPosition == "Test-FI" {
 			// AllowedExtRegex string
 			// MaxSize int64
 			if i == 6 {
-				fm = former.InvalidFileSizeMessage
-				fc = former.InvalidFileSizeCode
+				fm = former.InvalidInputSizeValueMessage
+				fc = former.InvalidInputSizeValueCode
 			} else if i == 7 {
-				fm = former.InvalidFileExtMessage
-				fc = former.InvalidFileExtCode
+				fm = former.InvalidInputExtValueMessage
+				fc = former.InvalidInputExtValueCode
 			} else {
 				t.Error("Fail FI in wrong location")
 			}
@@ -249,8 +249,8 @@ func TestInputRejection(t *testing.T) {
 		   if i != 8{
 		     t.Error("Fail anon-option in wrong location")
 		   }
-		   fm = former.ResponseMissingMessage
-		   fc = former.ResponseMissingCode
+		   fm = former.InputResponseMissingMessage
+		   fc = former.InputResponseMissingCode
 		 } */
 
 		if fm != e.FailType {
@@ -564,11 +564,11 @@ func TestExcessiveInputLen(t *testing.T) {
 	if len(issue_array) != 1 {
 		t.Fatal("There should be errors here", issue_array, len(new_response.Responses["Test-TA"]), "vs", globals.MaxInputTextLen)
 	}
-	if issue_array[0].FailType != former.InvalidTextLengthMessage {
+	if issue_array[0].FailType != former.InvalidInputTextLengthMessage {
 		t.Error("Incorrect error msg", issue_array[0].FailType)
 
 	}
-	if issue_array[0].FailCode != former.InvalidTextLengthCode {
+	if issue_array[0].FailCode != former.InvalidInputTextLengthCode {
 		t.Error("Incorrect error code", issue_array[0].FailCode)
 	}
 }

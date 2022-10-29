@@ -87,6 +87,22 @@ function recursiveFormFieldRebuild(field_group:any , base_button:HTMLButtonEleme
           (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
           (<HTMLInputElement>document.getElementById(field_id + "-placeholder")).value = field.Object.Placeholder;
           break;
+        case "genericinput":
+        field_id = createInputInputs(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id ,respondable_creation_object.container);
+          (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
+          (<HTMLInputElement>document.getElementById(field_id + "-label")).value = field.Object.Field.Label;
+          (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
+          (<HTMLInputElement>document.getElementById(field_id + "-placeholder")).value = field.Object.Placeholder;
+          (<HTMLInputElement>document.getElementById(field_id + "-type")).value = field.Object.Type;
+          break;
+        case "fileinput":
+        field_id = createFileInputs(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id ,respondable_creation_object.container);
+          (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
+          (<HTMLInputElement>document.getElementById(field_id + "-label")).value = field.Object.Field.Label;
+          (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
+          (<HTMLInputElement>document.getElementById(field_id + "-allowed-ext")).value = field.Object.AllowedExtRegex;
+          (<HTMLInputElement>document.getElementById(field_id + "-max-size")).value = field.Object.MaxSize;
+          break;
         case "selectiongroup":
           field_id = createSelectGroup(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id , respondable_creation_object.container);
           (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
@@ -94,13 +110,26 @@ function recursiveFormFieldRebuild(field_group:any , base_button:HTMLButtonEleme
           (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
 
           for(let check_count = 1 ; check_count < field.Object.CheckableItems.length ; check_count++ ){
-             addCheckable( <HTMLButtonElement>document.getElementById(field_id) )
+             addListField( <HTMLButtonElement>document.getElementById(field_id) , "checkable" )
           }
           field.Object.CheckableItems.forEach((check , index) => {
             (<HTMLInputElement>document.getElementById(field_id + "-checkable-label-" + index)).value = check.Label;
             (<HTMLInputElement>document.getElementById(field_id + "-checkable-value-" + index)).value = check.Value;
           });
+          break;
+        case "optiongroup":
+          field_id = createOptionsGroup(respondable_creation_object.base_id, respondable_creation_object.respondable_container_id , respondable_creation_object.container);
+          (<HTMLInputElement>document.getElementById(field_id + "-name")).value = field.Object.Field.Name;
+          (<HTMLInputElement>document.getElementById(field_id + "-label")).value = field.Object.Field.Label;
+          (<HTMLInputElement>document.getElementById(field_id + "-required")).checked = field.Object.Field.Required;
 
+          for(let opt_count = 1 ; opt_count < field.Object.Options.length ; opt_count++ ){
+             addListField( <HTMLButtonElement>document.getElementById(field_id) , "option" )
+          }
+          field.Object.Options.forEach((opt , index) => {
+            (<HTMLInputElement>document.getElementById(field_id + "-option-label-" + index)).value = opt.Label;
+            (<HTMLInputElement>document.getElementById(field_id + "-option-value-" + index)).value = opt.Value;
+          });
           break;
         default:
           break;
@@ -172,10 +201,10 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
       <LI>Item Type:
         <SELECT id="${res_id}-type">
           <OPTION value="textarea">TextArea</OPTION>
-          <OPTION value="input">Input(unimplemented)</OPTION>
-          <OPTION value="file">FileInput(unimplemented)</OPTION>
+          <OPTION value="input">Input</OPTION>
+          <OPTION value="file">FileInput</OPTION>
           <OPTION value="select">SelectGroup</OPTION>
-          <OPTION value="option">OptionGroup(unimplemented)</OPTION>
+          <OPTION value="option">OptionGroup</OPTION>
         </SELECT>
       </LI>
       <LI>If we want any of the unimplemented features, then you'll have to ask me or wait until I personally require it</LI>
@@ -219,6 +248,80 @@ export function createTextAreaInputs(base_id:string, respondable_container_id: s
     return field_id
 }
 
+export function createFileInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement): string{
+  let field_id = "field" + base_id
+  let fi_id = "file" + (Date.now() + Math.random())
+  container.className =  "respondable-group"
+  container.id = fi_id
+  container.setAttribute("data-type", "fileinput")
+  container.setAttribute("style" ,"width:400px;min-height:200px")
+  container.innerHTML = `TextArea Creation Info:<BR/>
+    <UL>
+      <LI>
+        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
+      </LI>
+      <LI>
+        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+      </LI>
+      <LI>
+        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
+      </LI>
+      <LI>
+        Allowed Extention Pattern : <INPUT  data-field="1" name='AllowedExtRegex' id="${field_id}-allowed-ext"/><BR/>
+      </LI>
+      <LI>
+        Max Filesize(Bytes) : <INPUT  data-field="1" type="number" name='MaxSize' id="${field_id}-max-size"/><BR/>
+      </LI>
+      <LI><BUTTON id="${fi_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${fi_id}')">Delete</BUTTON></LI>
+    </UL>`;
+    return field_id
+}
+
+export function createInputInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement){
+  let field_id = "field" + base_id
+  let in_id = "input" + (Date.now() + Math.random())
+  container.className =  "respondable-group"
+  container.id = in_id
+  container.setAttribute("data-type", "genericinput")
+  container.setAttribute("style" ,"width:400px;min-height:200px")
+  container.innerHTML = `Input Creation Info:<BR/>
+    <UL>
+      <LI>
+        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
+      </LI>
+      <LI>
+        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+      </LI>
+      <LI>
+        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
+      </LI>
+      <LI>
+        Placeholder : <INPUT  data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
+      </LI>
+      <LI>
+        Type : <SELECT data-field="1" name='Type' id="${field_id}-type">
+          <OPTGROUP label="Text Types">
+            <OPTION value="text">Text</OPTION>
+            <OPTION value="email">Email</OPTION>
+            <OPTION value="number">Number</OPTION>
+            <OPTION value="password">Password</OPTION>
+            <OPTION value="url">URL</OPTION>
+          </OPTGROUP>
+          <OPTGROUP label="Time Types">
+            <OPTION value="time">Time</OPTION>
+            <OPTION value="date">Date</OPTION>
+          </OPTGROUP>
+          <OPTGROUP label="Special Types">
+            <OPTION value="color">Color Picker</OPTION>
+            <OPTION value="range">Number Range</OPTION>
+          </OPTGROUP>
+        </SELECT>
+      </LI>
+      <LI><BUTTON id="${in_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${in_id}')">Delete</BUTTON></LI>
+    </UL>`;
+    return field_id
+}
+
 export function createSelectGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement): string{
   let field_id = "field" + (Date.now() + Math.random())
   let select_id = "select" + (Date.now() + Math.random())
@@ -245,12 +348,12 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
       </LI>
       <LI>
         Group Items :
-        <BUTTON id="${field_id}" onclick="FormLibrary.addCheckable(this)" data-link-id="${field_id}">+</BUTTON>
-        <BUTTON onclick="FormLibrary.removeCheckable(this)" data-link-id="${field_id}">-</BUTTON><BR/>
+        <BUTTON id="${field_id}" onclick="FormLibrary.addListField(this , 'checkable')" data-link-id="${field_id}">+</BUTTON>
+        <BUTTON onclick="FormLibrary.removeListItem(this, 'checkable')" data-link-id="${field_id}">-</BUTTON><BR/>
         <OL data-field="1" data-select="1" id="${field_id}-checkable">
           <LI>
-            <INPUT placeholder="Label"  data-checkable-no="0" data-field="1" name='Label' id="${field_id}-checkable-label-0"/>
-            <INPUT placeholder="Value"  data-checkable-no="0" data-field="1" name='Value'  id="${field_id}-checkable-value-0"/>
+            <INPUT placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-checkable-label-0"/>
+            <INPUT placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-checkable-value-0"/>
           </LI>
         </OL>
       </LI>
@@ -259,24 +362,58 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
     return field_id
 }
 
-export function addCheckable(button : HTMLButtonElement) {
+export function addListField(button : HTMLButtonElement , type:string) {
   let parent_id = button.getAttribute("data-link-id")
-  let ol = document.getElementById(parent_id + "-checkable")
+  let ol = document.getElementById(parent_id + "-" + type)
   let li = document.createElement("LI")
   let child_count = ol.children.length
   li.innerHTML = `
-    <INPUT placeholder="Label" data-checkable-no="${child_count}" data-field="1" name='Label' id="${parent_id}-checkable-label-${child_count}"/>
-    <INPUT placeholder="Value" data-checkable-no="${child_count}" data-field="1" name='Value' id="${parent_id}-checkable-value-${child_count}"/>
+    <INPUT placeholder="Label" data-list-item-no="${child_count}" data-field="1" name='Label' id="${parent_id}-${type}-label-${child_count}"/>
+    <INPUT placeholder="Value" data-list-item-no="${child_count}" data-field="1" name='Value' id="${parent_id}-${type}-value-${child_count}"/>
   `
   ol.appendChild(li)
 }
-export function removeCheckable(button : HTMLButtonElement) {
+export function removeListItem(button : HTMLButtonElement , type:string) {
   let parent_id = button.getAttribute("data-link-id")
-  let ol = document.getElementById(parent_id + "-checkable")
+  let ol = document.getElementById(parent_id + "-" + type)
   if (ol.childNodes.length <= 1) {
     return
   }
   ol.removeChild(ol.lastChild)
+}
+
+export function createOptionsGroup(base_id:string, respondable_container_id:string ,  container: HTMLDivElement) : string {
+  let field_id = "field" + (Date.now() + Math.random())
+  let opt_id = "option" + (Date.now() + Math.random())
+  container.className = "respondable-group"
+  container.id =  opt_id
+  container.setAttribute("data-type", "optiongroup")
+  container.setAttribute("style", "width:400px;min-height:200px")
+  container.innerHTML = `OptionGroup Creation Info:<BR/>
+    <UL>
+      <LI>
+        Name : <INPUT  data-field="1" name='Name' id="${field_id}-name"/><BR/>
+      </LI>
+      <LI>
+        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+      </LI>
+      <LI>
+        Required : <INPUT  data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
+      </LI>
+      <LI>
+      Option Fields :
+        <BUTTON id="${field_id}" onclick="FormLibrary.addListField(this , 'option')" data-link-id="${field_id}">+</BUTTON>
+        <BUTTON onclick="FormLibrary.removeListItem(this, 'option')" data-link-id="${field_id}">-</BUTTON><BR/>
+        <OL data-field="1" data-select="1" id="${field_id}-option">
+          <LI>
+            <INPUT placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-option-label-0"/>
+            <INPUT placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-option-value-0"/>
+          </LI>
+        </OL>
+      </LI>
+      <LI><BUTTON id="${opt_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${opt_id}')">Delete</BUTTON></LI>
+    </UL>`;
+    return field_id
 }
 
 export function responseTypeSelected(respondable_container_id:string , button: HTMLButtonElement ){
@@ -284,14 +421,22 @@ export function responseTypeSelected(respondable_container_id:string , button: H
   let select_obj = document.getElementById(base_id + "-type")
   let container = document.getElementById(base_id + "-fields") as HTMLDivElement
   console.log(base_id , select_obj , container)
-  let selection = (select_obj as HTMLInputElement).value
+  let selection = (select_obj as HTMLInputElement).value;
   switch (selection) {
     case "textarea":
       createTextAreaInputs(base_id , respondable_container_id , container)
       break;
+    case "input":
+      createInputInputs(base_id , respondable_container_id , container)
+      break;
+    case "file":
+      createFileInputs(base_id , respondable_container_id , container)
+      break;
     case "select":
       createSelectGroup(base_id , respondable_container_id , container)
-
+      break;
+    case "option":
+      createOptionsGroup(base_id , respondable_container_id , container)
       break;
 
     default:
@@ -454,24 +599,28 @@ export function submitForm(button: HTMLButtonElement , post_url){
               case "selectiongroup":
                 res.Object[selects[0].getAttribute("Name")] = selects[0].value
                 break;
-
+              case "genericinput":
+                res.Object[selects[0].getAttribute("Name")] = selects[0].value
+                break;
               default:
                 break;
             }
           }
           for (let field_index = 0 ; field_index < inputs.length ; field_index++){
+            let val:any = inputs[field_index].value
+            if (inputs[field_index].getAttribute("type") == "checkbox"){
+               val = inputs[field_index].checked
+            } else if(inputs[field_index].getAttribute("type") == "number"){
+              val = parseInt(inputs[field_index].value)
+            }
             if(response_child.getAttribute("data-type") == "selectiongroup"){
               // Selection groups
-              let val:any = inputs[field_index].value
-              if (inputs[field_index].getAttribute("type") == "checkbox"){
-                 val = inputs[field_index].checked
-              }
-
-              if(inputs[field_index].getAttribute("data-checkable-no")) {
+              // val could be boolean or string value
+              if(inputs[field_index].getAttribute("data-list-item-no")) {
                 if(!res.Object["CheckableItems"]){
                   res.Object["CheckableItems"] = []
                 }
-                let checkitem_index = parseInt(inputs[field_index].getAttribute("data-checkable-no"))
+                let checkitem_index = parseInt(inputs[field_index].getAttribute("data-list-item-no"))
                 if(!res.Object["CheckableItems"][checkitem_index]){
                   res.Object["CheckableItems"][checkitem_index] = {}
                 }
@@ -488,14 +637,31 @@ export function submitForm(button: HTMLButtonElement , post_url){
                     break;
                 }
               }
-            } else if(response_child.getAttribute("data-type") == "fileinput"){
-              // FileInputTag
-            } else{
-              // Textarea and etc
-              let val:any = inputs[field_index].value
-              if (inputs[field_index].getAttribute("type") == "checkbox"){
-                 val = inputs[field_index].checked
+            } else if(response_child.getAttribute("data-type") == "optiongroup"){
+              // Option groups
+              if(inputs[field_index].getAttribute("data-list-item-no")) {
+                if(!res.Object["Options"]){
+                  res.Object["Options"] = []
+                }
+                let optitem_index = parseInt(inputs[field_index].getAttribute("data-list-item-no"))
+                if(!res.Object["Options"][optitem_index]){
+                  res.Object["Options"][optitem_index] = {}
+                }
+                res.Object["Options"][optitem_index][inputs[field_index].getAttribute("name")] =  val
+              } else{
+                switch (inputs[field_index].getAttribute("name")) {
+                  case "Name":
+                  case "Label":
+                  case "Required":
+                    res.Object.Field[inputs[field_index].getAttribute("name")] =  val
+                    break;
+                  default:
+                    res.Object[inputs[field_index].getAttribute("name")] =  val
+                    break;
+                }
               }
+            } else{
+              // Textarea and genericinput
               console.log(inputs , inputs[field_index].getAttribute("name") ,  val)
               switch (inputs[field_index].getAttribute("name")) {
                 case "Name":

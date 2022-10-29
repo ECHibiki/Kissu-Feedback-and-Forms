@@ -1,10 +1,11 @@
 package tools
 
 import (
-	"database/sql"
-	"fmt"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 	_ "github.com/go-sql-driver/mysql"
+	"database/sql"
+	"time"
+	"fmt"
 )
 
 func BuildDBTables(db *sql.DB) {
@@ -37,11 +38,23 @@ func QuickDBConnect(cfg types.ConfigurationSettings) *sql.DB {
 	if err != nil {
 		panic("DB connect error")
 	}
-	db.SetConnMaxLifetime(0)
-	db.SetConnMaxIdleTime(0)
-	db.SetMaxOpenConns(0)
-	db.SetMaxIdleConns(5)
+	db.SetConnMaxIdleTime(10 * time.Minute)
+	startDBPinger(db)
 	return db
+}
+
+func startDBPinger(db *sql.DB){
+	ping := time.NewTicker(time.Duration(10) * time.Minute)
+	go func(){
+		// infinite loop on timer
+		for{
+			<-ping.C
+				err := db.Ping()
+				if err != nil {
+					fmt.Printf("%s" , err.Error())
+				}
+		}
+	}()
 }
 
 func WritePassToDB(db *sql.DB, pass types.PasswordsDBFields) error {

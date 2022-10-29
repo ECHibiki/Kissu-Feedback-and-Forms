@@ -5,15 +5,15 @@
   <DIV id="{{respondable.Object.Field.Name}}" class="respondable-group  {{ respondable.GetType() }}">
     {% if respondable.GetType() == "textarea" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <TEXTAREA class="readonly-input" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}">
+      <TEXTAREA class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}">
 {{ reply[respondable.Object.Field.Name] }}
       </TEXTAREA> </LABEL>
     {% elseif respondable.GetType() == "genericinput" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <INPUT class="readonly-input"  readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.GetType()}}" /> </LABEL>
+      <INPUT value="{{ reply[respondable.Object.Field.Name] }}" class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.Object.GetInputType()}}" /> </LABEL>
     {% elseif respondable.GetType() == "fileinput" %}
       <LABEL> {% if respondable.Object.Field.Label != "" %}  {{respondable.Object.Field.Label}}<br/> {% endif %}
-      <INPUT class="readonly-input"  readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" type="file" data-allowed-regex="{{ respondable.Object.AllowedExtRegex }}"  data-max-size="{{ respondable.Object.MaxSize }}" /> </LABEL>
+      Download: <A href="/mod/files/{{ storagename }}/{{ reply.Identifier }}/{{reply[respondable.Object.Field.Name]}}" class="user-file" data-name="{{respondable.Object.Field.Name}}">{{reply[respondable.Object.Field.Name]}}</A> </LABEL>
     {% elseif respondable.GetType() == "selectiongroup" %}
         <P>{{respondable.Object.Field.Label}}</P>
         {% for check in respondable.Object.CheckableItems %}
@@ -27,9 +27,9 @@
         {% endfor %}
     {% elseif respondable.GetType() == "optiongroup" %}
         <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-        <SELECT class="readonly-input" data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" >
-          {% for opt in respondable.Options %}
-            <OPTION value="{{opt.Value}}">{{ opt.Value }}</OPTION>
+        <SELECT value="{{ reply[respondable.Object.Field.Name] }}" class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required ? "true" : "false" }}" >
+          {% for opt in respondable.Object.Options %}
+            <OPTION value="{{opt.Value}}" {% if reply[respondable.Object.Field.Name] == opt.Value %} selected="1" {% endif %}>{{ opt.Label }}</OPTION>
           {% endfor %}
         </SELECT>
       </LABEL>

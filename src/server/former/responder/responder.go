@@ -15,6 +15,8 @@ import (
 	"errors"
 	"time"
 	"os"
+
+	"fmt"
 )
 
 // c.Request.FromFile
@@ -27,12 +29,16 @@ import (
 // The input names of checkgroups are ignored for what the form says they should be
 
 /*
-  ResponseMissingMessage                       = "A field is required yet has no response."
+  InputResponseMissingMessage                       = "A field is required yet has no response."
   InvalidInputMessage                     ...
   InvalidOptionValueMessage                    = "The value of an options group does not exist on the server."
   InvalidFileExtMessage                        = "The extention of a file is not permitted on the server."
-  InvalidFileSizeMessage                       = "The size of a file is too large."
+  InvalidInputFileSizeMessage                       = "The size of a file is too large."
 */
+
+func init(){
+	fmt.Print("")
+}
 
 func ValidateTextResponsesAgainstForm(text_responses map[string]string, form former.FormConstruct) (error_list []former.FailureObject) {
 	r_fo := validateRequiredTextFields(text_responses, form)
@@ -70,7 +76,7 @@ func validateRequiredTextFields(text_responses map[string]string, form former.Fo
 						}
 					}
 					if !answer_found {
-						error_list = append(error_list, former.FailureObject{former.ResponseMissingMessage, former.ResponseMissingCode, name})
+						error_list = append(error_list, former.FailureObject{former.InputResponseMissingMessage, former.InputResponseMissingCode, name})
 					}
 				} else {
 					response, ok := text_responses[name]
@@ -83,7 +89,7 @@ func validateRequiredTextFields(text_responses map[string]string, form former.Fo
 						}
 					}
 					if fail {
-						error_list = append(error_list, former.FailureObject{former.ResponseMissingMessage, former.ResponseMissingCode, name})
+						error_list = append(error_list, former.FailureObject{former.InputResponseMissingMessage, former.InputResponseMissingCode, name})
 					}
 				}
 			}
@@ -137,7 +143,7 @@ func validateResponseTextFields(text_responses map[string]string, form former.Fo
 			continue
 		}
 		if len(response) > globals.MaxInputTextLen {
-			error_list = append(error_list, former.FailureObject{former.InvalidTextLengthMessage, former.InvalidTextLengthCode, field})
+			error_list = append(error_list, former.FailureObject{former.InvalidInputTextLengthMessage, former.InvalidInputTextLengthCode, field})
 		}
 
 		options_respondable, is_options := respondable.Object.(former.OptionGroup)
@@ -150,7 +156,7 @@ func validateResponseTextFields(text_responses map[string]string, form former.Fo
 				}
 			}
 			if !found_value {
-				error_list = append(error_list, former.FailureObject{former.InvalidOptionValueMessage, former.InvalidOptionValueCode, field})
+				error_list = append(error_list, former.FailureObject{former.InvalidInputOptionValueMessage, former.InvalidInputOptionValueCode, field})
 			}
 		}
 
@@ -163,18 +169,18 @@ func validateResponseTextFields(text_responses map[string]string, form former.Fo
 					if selection_group.SelectionCategory == former.Checkbox {
 						field_index, err := strconv.Atoi(field[strings.LastIndex(field, "-")+1:])
 						if err != nil {
-							error_list = append(error_list, former.FailureObject{former.InvalidSelectionIndexMessage, former.InvalidSelectionIndexCode, field})
+							error_list = append(error_list, former.FailureObject{former.InvalidInputSelectionIndexMessage, former.InvalidInputSelectionIndexCode, field})
 							continue
 						}
 						if field_index != i+1 {
-							error_list = append(error_list, former.FailureObject{former.InvalidSelectionIndexMessage, former.InvalidSelectionIndexCode, field})
+							error_list = append(error_list, former.FailureObject{former.InvalidInputSelectionIndexMessage, former.InvalidInputSelectionIndexCode, field})
 						}
 					}
 					break
 				}
 			}
 			if !found_value {
-				error_list = append(error_list, former.FailureObject{former.InvalidSelectionValueMessage, former.InvalidSelectionValueCode, field})
+				error_list = append(error_list, former.FailureObject{former.InvalidInputSelectionValueMessage, former.InvalidInputSelectionValueCode, field})
 			}
 		}
 	}
@@ -211,10 +217,10 @@ func validateRequiredFileFields(file_tags map[string]former.MultipartFile, form 
 				file, ok := file_tags[name]
 				if required && !ok {
 					fail = true
-				} else if ok {
+				} else if ok && file.Header != nil {
 					// begin file verification
 					if file.Header.Size > input.MaxSize {
-						error_list = append(error_list, former.FailureObject{former.InvalidFileSizeMessage, former.InvalidFileSizeCode, name})
+						error_list = append(error_list, former.FailureObject{former.InvalidInputSizeValueMessage, former.InvalidInputSizeValueCode, name})
 					}
 					r, e := regexp.Compile(input.AllowedExtRegex)
 					if e != nil {
@@ -222,14 +228,14 @@ func validateRequiredFileFields(file_tags map[string]former.MultipartFile, form 
 						continue
 					}
 					if !r.Match([]byte(file.Header.Filename)) {
-						error_list = append(error_list, former.FailureObject{former.InvalidFileExtMessage, former.InvalidFileExtCode, name})
+						error_list = append(error_list, former.FailureObject{former.InvalidInputExtValueMessage, former.InvalidInputExtValueCode, name})
 					}
 					if strings.Contains(file.Header.Filename, "/") {
 						error_list = append(error_list, former.FailureObject{former.DangerousPathMessage, former.DangerousPathCode, name})
 					}
 				}
 				if fail {
-					error_list = append(error_list, former.FailureObject{former.ResponseMissingMessage, former.ResponseMissingCode, name})
+					error_list = append(error_list, former.FailureObject{former.InputResponseMissingMessage, former.InputResponseMissingCode, name})
 				}
 			}
 		}
@@ -364,10 +370,14 @@ func FillMapWithPostFiles(c *gin.Context, file_map map[string]former.MultipartFi
 			for _, r := range item.Respondables {
 				if r.Type == former.FileInputTag {
 					image, header, _ := c.Request.FormFile(r.Object.GetName())
+					if header == nil || image == nil {
+						continue
+					}
 					mp := former.MultipartFile{
 						File:   image,
 						Header: header,
 					}
+					mp.Header.Filename = r.Object.GetName() + "-" + mp.Header.Filename
 					file_map[r.Object.GetName()] = mp
 				}
 			}
@@ -399,9 +409,8 @@ func ConvertFormResponseToJSONFormResponse(root_dir string, resp former.FormResp
 	json_resp.ResponderID = resp.ResponderID
 	json_resp.Responses = resp.Responses
 	json_resp.FilePaths = make(map[string]string)
-	storage_dir := root_dir + "/data/" + resp.FormName + "/" + resp.ResponderID + "/"
 	for k, v := range resp.FileObjects {
-		json_resp.FilePaths[k] = storage_dir + "files/" + v.Header.Filename
+		json_resp.FilePaths[k] = v.Header.Filename
 	}
 
 	return json_resp

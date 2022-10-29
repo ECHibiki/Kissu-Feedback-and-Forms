@@ -91,11 +91,11 @@ func CleanupTestingInitializations(initialization_folder string) {
 
 	err = os.RemoveAll("../../test/settings/")
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Printf("%s" , err.Error())
 	}
 	err = os.RemoveAll("../../test/data/")
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Printf("%s" , err.Error())
 	}
 
 }
@@ -310,7 +310,7 @@ func CopyTestFilesToMemory(root_dir string, image_names map[string]string) map[s
 		processed_images[key] = former.MultipartFile{
 			File: file_handle,
 			Header: &multipart.FileHeader{
-				Filename: fname,
+				Filename: key + "-" + fname,
 				Header:   nil, // we won't use this unless we must
 				Size:     size,
 			},

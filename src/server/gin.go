@@ -88,6 +88,8 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *g
 			// download everything of a form
 			mod_group.GET("/download/:formname/:formnum", modServeDownloadForm(db))
 			mod_group.GET("/download/:formname/downloadable.tar.gz", modDownloadableForm())
+
+			mod_group.GET("/files/:formname/:id/:filename", modDownloadableFile())
 			// Retrieve various forms
 			api_group := mod_group.Group("api/")
 			{
@@ -170,7 +172,7 @@ func modServeEditForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		}
 		form_data, err := returner.GetFormOfID(db, int64(num))
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't find form"})
 			return
 		}
@@ -197,7 +199,7 @@ func modServeViewAllForms(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_data_list, err := returner.GetAllForms(db)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get forms"})
 			return
 		}
@@ -242,7 +244,7 @@ func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			reply_list = append(reply_list, r_map)
 		}
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get form replies"})
 			return
 		}
@@ -267,7 +269,7 @@ func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		}
 		form_data, err := returner.GetFormOfID(db, form_num)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Couldn't find form"})
 			return
 		}
@@ -346,7 +348,16 @@ func modDownloadableForm() gin.HandlerFunc {
 		now := strconv.Itoa(int(time.Now().Unix()))
 		c.FileAttachment(globals.RootDirectory+"/data/"+form_name+"/downloadable.tar.gz", form_name+"-"+now+"-archive.tar.gz")
 	}
+}
 
+func modDownloadableFile() gin.HandlerFunc {
+	return func(c *gin.Context){
+		form_name := c.Param("formname")
+		user_name := c.Param("id")
+		file_name := c.Param("filename")
+
+		c.FileAttachment(globals.RootDirectory+"/data/"+form_name+"/" + user_name + "/files/" + file_name , file_name)
+	}
 }
 
 func modServeAPIGetAll() gin.HandlerFunc {
@@ -422,7 +433,7 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 		param_pass := c.PostForm("password")
 		err = CheckPasswordValid(param_pass, stored_pass.HashedPassword)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			if json == "" {
 				template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "Invalid Password"})
 				if err != nil {
@@ -503,7 +514,7 @@ func userPostForm(db *sql.DB) gin.HandlerFunc {
 		var file_issue_array []former.FailureObject = responder.ValidateFileObjectsAgainstForm(response_form.FileObjects, form_construct)
 		issue_array := append(text_issue_array, file_issue_array...)
 		if len(issue_array) != 0 {
-			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "There are mistakes with the form", "error-list": issue_array})
+			tools.AbortWithJSONError( c , http.StatusInternalServerError , "Validation error" , gin.H{"error": "There are mistakes with the form", "error-list": issue_array})
 			return
 		}
 
@@ -645,7 +656,7 @@ func modPostEditForm(db *sql.DB, cfg *types.ConfigurationSettings) gin.HandlerFu
 		}
 		issue_list := builder.ValidateFormEdit(form_construct, original_form_construct)
 		if len(issue_list) > 0 {
-			tools.AbortWithJSONError( c , http.StatusNotAcceptable , err.Error() , gin.H{"error": "Invalid inputs", "error-list": issue_list})
+			tools.AbortWithJSONError( c , http.StatusNotAcceptable , fmt.Sprintf("%+v\n", issue_list) , gin.H{"error": "Invalid inputs", "error-list": issue_list})
 			return
 		} else {
 			insertable_form, err := builder.MakeFormWritable(form_construct)
@@ -691,7 +702,7 @@ func modPostDeleteResponse(db *sql.DB) gin.HandlerFunc {
 		response_fields, err := returner.GetResponseByID(db, int64(response_number))
 		err = destroyer.DeleteResponse(db, globals.RootDirectory, int64(response_number), form_name, response_fields.Identifier)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			fmt.Printf("%s" , err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Issue on delete"})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"message": "Deleted " + c.Param("formname") + " No. " + c.Param("respnum")})

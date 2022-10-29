@@ -58,16 +58,17 @@ const (
 	InvalidNameStarterMessage    = "Names must start with letters."
 	InvalidNameCharactersMessage = "Names can only have the '-', '_', '.' or ':' characters."
 	InvalidCheckboxMessage       = "A checkbox creates fields of the given name followed by 'hypen number'(eg. name-3). A checkbox conflicts with other fields that end with 'hypen number'."
-	InvalidTextLengthMessage     = "A Field exceeds " + globals.STRMaxInputTextLen + " characters. Reduce the length"
-
-	ResponseMissingMessage       = "A field is required yet has no response."
-	InvalidInputMessage          = "A field filled out does not actually exist on the server."
-	InvalidSelectionIndexMessage = "A selection group's position does not make sense."
-	InvalidSelectionValueMessage = "The value of a selection group does not exist on the server."
-	InvalidOptionValueMessage    = "The value of an options group does not exist on the server."
-	InvalidFileExtMessage        = "The extention of a file is not permitted on the server."
-	InvalidFileSizeMessage       = "The size of a file is too large."
 	InvalidExtRegexMessage       = "The form's regex is invalid."
+	InvalidFileSizeMessage       = "File sizes can't excceed 100MB"
+
+	InputResponseMissingMessage       = "A field is required yet has no response."
+	InvalidInputMessage          			= "A field filled out does not actually exist on the server."
+	InvalidInputTextLengthMessage     = "A Field exceeds " + globals.STRMaxInputTextLen + " characters. Reduce the length"
+	InvalidInputSelectionIndexMessage = "A selection group's position does not make sense."
+	InvalidInputSelectionValueMessage = "The value of a selection group does not exist on the server."
+	InvalidInputOptionValueMessage    = "The value of an options group does not exist on the server."
+	InvalidInputExtValueMessage  			= "The extention of a file is not permitted on the server."
+	InvalidInputSizeValueMessage 			= "The size of a file is too large."
 
 	DangerousPathMessage = "Path contains illegal characters"
 
@@ -89,16 +90,18 @@ const (
 	InvalidNameCharactersCode
 	InvalidNameStarterCode
 	InvalidCheckboxCode
-	InvalidTextLengthCode
-
-	ResponseMissingCode
-	InvalidInputCode
-	InvalidSelectionIndexCode
-	InvalidSelectionValueCode
-	InvalidOptionValueCode
-	InvalidFileExtCode
 	InvalidFileSizeCode
 	InvalidExtRegexCode
+
+	InputResponseMissingCode
+	InvalidInputCode
+	InvalidInputTextLengthCode
+	InvalidInputSelectionIndexCode
+	InvalidInputSelectionValueCode
+	InvalidInputOptionValueCode
+	InvalidInputExtValueCode
+	InvalidInputSizeValueCode
+
 
 	DangerousPathCode
 
@@ -350,6 +353,9 @@ func (gi GenericInput) GetRequired() bool {
 }
 func (gi GenericInput) GetDescription() string {
 	return gi.Field.Label
+}
+func (gi GenericInput) GetInputType() string {
+	return string(gi.Type)
 }
 
 type FileInput struct {

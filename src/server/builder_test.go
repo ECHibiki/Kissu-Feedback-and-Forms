@@ -1134,3 +1134,65 @@ func DirectoryVerification(t *testing.T) {
 	}
 
 }
+
+func TestInvalidFileConstruct(t * testing.T){
+	var initialization_folder string = "../../test"
+	db, _, _ := prebuilder.DoTestingIntializations(initialization_folder)
+	defer prebuilder.CleanupTestingInitializations(initialization_folder)
+	// Another Gin function builds the struct so that these functions can read it
+	// function won't be tested because I don't want to mock HTTP requests at this time
+	var failing_bad_char_form former.FormConstruct = former.FormConstruct{
+		AnonOption:  false,
+		FormName:    "this form name is altered to be placed into SQL and files",
+		ID:          "id",
+		Description: "ID and NAME tokens must begin with a letter ([A-Za-z]) and may be followed by any number of letters, digits ([0-9]), hyphens (\"-\"), underscores (\"_\"), colons (\":\"), and periods (\".\")",
+		FormFields: []former.FormGroup{
+			{
+				// This should pass because they have a description
+				Label:       "ID validity determined by alphanumeric checks",
+				ID:          "starting-with-number-is-bad",
+				Description: "",
+				Respondables: []former.UnmarshalerFormObject{
+					{
+						Type: former.FileInputTag,
+						Object: former.FileInput{
+							Field: former.Field{
+								Label:    "Test-FI-1",
+								Name:     "fi-1",
+								Required: true,
+							},
+							AllowedExtRegex: "?this is invalid",
+							MaxSize:  1000000000000,
+						},
+					},
+				},
+			},
+		},
+	}
+	// Follows outer leafs of search tree
+	failure_object := builder.ValidateForm(db, failing_bad_char_form)
+	// InvalidExtRegexMessage       = "The form's regex is invalid."
+	// InvalidFileSizeMessage       = "File sizes can't excceed 100MB"
+	if len(failure_object) != 2 {
+		t.Fatal("The number of errors is incorrect for inccorect character checks\n", failure_object, len(failure_object))
+	}
+
+	if failure_object[0].FailType != former.InvalidExtRegexMessage {
+		t.Error("Error message is not recorded correctly", failure_object[0].FailType, former.InvalidExtRegexMessage)
+	}
+	if failure_object[0].FailCode != former.InvalidExtRegexCode {
+		t.Error("Error message is not recorded correctly", failure_object[0])
+	}
+	if failure_object[0].FailPosition != "fi-1" {
+		t.Error("Error fail is not in correct location", failure_object[0].FailPosition, "fi-1")
+	}
+	if failure_object[1].FailType != former.InvalidFileSizeMessage {
+		t.Error("Error message is not recorded correctly", failure_object[1].FailType, former.InvalidExtRegexMessage)
+	}
+	if failure_object[1].FailCode != former.InvalidFileSizeCode {
+		t.Error("Error message is not recorded correctly", failure_object[1])
+	}
+	if failure_object[1].FailPosition != "fi-1" {
+		t.Error("Error fail is not in correct location", failure_object[1].FailPosition, "fi-1")
+	}
+}
