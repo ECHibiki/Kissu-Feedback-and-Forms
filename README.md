@@ -3,10 +3,8 @@ Kissu's application for handling, creating and linking forms. Usefull for feedba
 Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.<br/>
 Javascript is handled through a package containing functions which are used by the HTML pages inside of SCRIPT tags
 
-## Notes
-- Routing will be manually tested.
-- The UI(and individual templates) will be manually tested.
-- The Templating engine itself is tested.
+## Features
+Create, drag, drop, respond, view, edit or download(CSV and JSON) for forms with a single user login. Allows for file submissions. text submissions and a variety of input types. Do not need to know any HTML to use this service. Forms allow for anonymous submission, hashing the users IP, or for it to be IP based. User display of forms does not use any javascript, but mod displays allow for a variety of vanilla javascript functionality.
 
 ## Tech
  - Gin Server
@@ -16,8 +14,7 @@ Javascript is handled through a package containing functions which are used by t
 ## Support
 Help support Kissu and my development processes: https://ko-fi.com/kissu
 
-## Features
-Create, drag, drop, respond, view, edit or download(CSV and JSON) for forms with a single user login. Allows for file submissions. text submissions and a variety of input types. Do not need to know any HTML to use this service.
+
 
 ## Closing Remarks
   - In the future these test cases will either be augmented or new ones will be created
