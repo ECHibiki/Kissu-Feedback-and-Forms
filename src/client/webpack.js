@@ -1,4 +1,4 @@
-
+const TerserPlugin = require("terser-webpack-plugin");
 const Version = "0.3.1";
 
 module.exports = {
@@ -13,6 +13,15 @@ module.exports = {
     library: 'FormLibrary',
     libraryTarget:'umd',
     umdNamedDefine: true
+  },
+  optimization: {
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          keep_fnames: true,
+        },
+      }),
+    ],
   },
     module: {
         rules: [
