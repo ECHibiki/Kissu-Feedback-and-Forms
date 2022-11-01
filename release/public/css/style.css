@@ -16,9 +16,25 @@ p {
 a {
     color: #a4f3f7;
 }
+li {
+    list-style: none;
+}
 textarea {
     width: 235px;
     height: 60px;
+}
+.item-ul {
+    padding-left: 0;
+}
+.item-li {
+  border: 1px solid #3e3e3e;
+  padding: 6px;
+}
+.item-controls {
+    float: right;
+}
+.item-toggle {
+    display: inline-block;
 }
 .readonly-input {
     cursor: default;
@@ -28,11 +44,13 @@ textarea {
     padding: 4px 5px;
     margin: 6px 0;
 }
-
+.drop-icon{
+  cursor:grab;
+}
 .form-group {
     border: 1px solid;
     padding: 5px 7px;
-    margin: 16px 0;
+    margin: 16px 2px;
 }
 
 .selectiongroup > label {

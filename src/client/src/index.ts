@@ -21,6 +21,8 @@
 // the library file for displaying various views
 // I'm gonna have to not hardcode(eg. nextSibling) this later... consider this file essentially a draft
 
+var actively_dragged:HTMLElement;
+
 export function helloWorld() {
   console.log("hello client");
 }
@@ -61,15 +63,15 @@ export function dropdownList(activator:HTMLAnchorElement, id:string) : boolean{
 }
 
 function buildDropdownResponse(container:HTMLDivElement , json:any) : string{
-  let html = `<UL>${
+  let html = `<UL class="item-ul">${
     (() => {
       if (!json.formatted_replies){
-        return "<LI>Empty Set</LI>"
+        return "<LI class='item-li'>Empty Set</LI>"
       }
 
       let list = "";
       json.formatted_replies.forEach((r) => {
-        list += `<LI>${r}</LI>`;
+        list += `<LI class='item-li'>${r}</LI>`;
       });
       return list
     })()
@@ -107,6 +109,9 @@ export function attatchCreators(settings:any){
 
 export function rebuildFromRaw(raw_json:string){
   try {
+    raw_json = raw_json.replace(/\n/g, "\\n")
+    raw_json = raw_json.replace(/\t/g, "\\t")
+    raw_json = raw_json.replace(/[\r\n\t\f\v]/g, "")
     let form_construct = JSON.parse(raw_json)
     let field_structure = { SubGroups: form_construct.FormFields }
     console.log("FC", field_structure)
@@ -223,11 +228,11 @@ export function createNewSubgroup( button: HTMLButtonElement): string{
 
   let group_id = "group" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
+  container.setAttribute("style" , "")
   container.className =  "subgroup form-group"
   container.id =  group_id + "-group"
-  container.setAttribute("style" , "")
-  container.innerHTML = `<LABEL>Group Label : <INPUT type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
-  <LABEL>Group ID : <INPUT type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
+  container.innerHTML = `<LABEL>Group Label : <INPUT ondragstart="return false" draggable="false" type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
+  <LABEL>Group ID : <INPUT ondragstart="return false" draggable="false" type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
   <LABEL>Group Descriptor : <br/> <TEXTAREA name="description" id="${group_id}-description"></TEXTAREA></LABEL> <br/>
   <BUTTON id="${group_id}" onclick="FormLibrary.createNewResponseElement(this)" data-link-id="${group_id}" >Create New Respondable Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.createNewSubgroup(this)" data-link-id="${group_id}">Create New Group Below Last Respondable</BUTTON><br/>
@@ -245,13 +250,13 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
 
   let res_id = "response" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
+  container.setAttribute("style", "width:400px;min-height:200px")
   container.className =  "creation-prompt respondable-group"
   container.id =  res_id + "-fields"
-  container.setAttribute("style", "width:400px;min-height:200px")
   container.innerHTML = `Element Creation Info:<BR/>
     <UL>
       <LI>Item Type:
-        <SELECT id="${res_id}-type">
+        <SELECT id="${res_id}-type" ondragstart="return false" draggable="false">
           <OPTION value="textarea">TextArea</OPTION>
           <OPTION value="input">Input</OPTION>
           <OPTION value="file">FileInput</OPTION>
@@ -262,16 +267,90 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
       <LI>If we want any of the unimplemented features, then you'll have to ask me or wait until I personally require it</LI>
       <LI><BUTTON id="${res_id}" data-link-id="${res_id}" onclick="FormLibrary.responseTypeSelected('${parent_id + "-respondables"}' , this)">Next</BUTTON></LI>
       <LI><BUTTON  data-link-id="${res_id}" onclick="FormLibrary.deleteContainer('${parent_id + "-respondables"}' , '${res_id + "-fields"}')">Delete</BUTTON></LI>
-    </UL>`
+    </UL>`;
+    container.ondrop = handleContainerDropWithinParent
+    container.ondragenter = handleContainerDragEnterWithinParent
+    container.ondragleave = handleContainerDragLeaveWithinParent
+    container.ondragover = function (e) {
+      e.preventDefault()
+    }
+    respondable_container.appendChild(container)
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
 
     // CREATE NEW AT END
     // INSERT IN POSITION
-    respondable_container.appendChild(container)
     return { base_id: res_id, respondable_container_id: parent_id + "-respondables" , container: <HTMLDivElement>container  }
 }
 
+function handleContainerDragStartWithinParent(e){
+  e.stopPropagation();
+  if (this != e.target){
+    e.preventDefault();
+    return
+  }
+  actively_dragged = this.parentNode;
+  this.parentNode.style.opacity = '0.4';
+  this.style.cursor = "grabing";
+
+}
+function handleContainerDragEndWithinParent(e){
+  e.stopPropagation();
+  if (this != e.target){
+    e.preventDefault();
+    return
+  }
+  actively_dragged = undefined;
+  this.parentNode.style.opacity = "1.0";
+  this.style.cursor = undefined;
+}
+function handleContainerDragEnterWithinParent(e){
+  console.log(this, e)
+  if(this.parentNode != e.currentTarget.parentNode){
+    e.preventDefault();
+    return
+  }
+  console.log(e)
+  e.currentTarget.style.border = '1px dashed red';
+}
+function handleContainerDragLeaveWithinParent(e){
+  // We want the lowest level listener for leaves
+  if( this.parentNode != e.target.parentNode ){
+    e.preventDefault();
+    return
+  }
+  e.currentTarget.style.border = '';
+}
+function handleContainerDropWithinParent(e){
+  console.log("drstart" , this, e.currentTarget , e)
+  if(this.parentNode != e.currentTarget.parentNode){
+    e.preventDefault();
+    return
+  }
+  let parent = this.parentNode
+
+
+  let this_copy = this.cloneNode(true);
+  parent.insertBefore(this_copy, actively_dragged);
+  this_copy.ondrop = handleContainerDropWithinParent
+  this_copy.ondragenter = handleContainerDragEnterWithinParent
+  this_copy.ondragleave = handleContainerDragLeaveWithinParent
+  this_copy.ondragover = function (e) {
+    e.preventDefault()
+  };
+  parent.insertBefore(actively_dragged, this);
+  parent.removeChild(this)
+  console.log("Action Drop" , e , this)
+}
+
 export function deleteContainer(base_container_id:string , sub_container_id:string){
-  document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));
+  document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));zz
 }
 
 export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement): string{
@@ -284,19 +363,28 @@ export function createTextAreaInputs(base_id:string, respondable_container_id: s
   container.innerHTML = `TextArea Creation Info:<BR/>
     <UL>
       <LI>
-        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
+        Name : <INPUT ondragstart="return false" draggable="false"  data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+        Label : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
+        Required : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
       </LI>
       <LI>
-        Placeholder : <INPUT  data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
+        Placeholder : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
       </LI>
       <LI><BUTTON id="${ta_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${ta_id}')">Delete</BUTTON></LI>
     </UL>`;
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
+
     return field_id
 }
 
@@ -310,22 +398,31 @@ export function createFileInputs(base_id:string, respondable_container_id: strin
   container.innerHTML = `TextArea Creation Info:<BR/>
     <UL>
       <LI>
-        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
+        Name : <INPUT ondragstart="return false" draggable="false"  data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+        Label : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
+        Required : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
       </LI>
       <LI>
-        Allowed Extention Pattern : <INPUT  data-field="1" name='AllowedExtRegex' id="${field_id}-allowed-ext"/><BR/>
+        Allowed Extention Pattern : <INPUT ondragstart="return false" draggable="false" data-field="1" name='AllowedExtRegex' id="${field_id}-allowed-ext"/><BR/>
       </LI>
       <LI>
-        Max Filesize(Bytes) : <INPUT  data-field="1" type="number" name='MaxSize' id="${field_id}-max-size"/><BR/>
+        Max Filesize(Bytes) : <INPUT ondragstart="return false" draggable="false" data-field="1" type="number" name='MaxSize' id="${field_id}-max-size"/><BR/>
       </LI>
       <LI><BUTTON id="${fi_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${fi_id}')">Delete</BUTTON></LI>
     </UL>`;
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
+
     return field_id
 }
 
@@ -339,19 +436,19 @@ export function createInputInputs(base_id:string, respondable_container_id: stri
   container.innerHTML = `Input Creation Info:<BR/>
     <UL>
       <LI>
-        Name : <INPUT   data-field="1" name='Name' id="${field_id}-name"/><BR/>
+        Name : <INPUT ondragstart="return false" draggable="false"  data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+        Label : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT  data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
+        Required : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Required' id="${field_id}-required" type="checkbox"/><BR/>
       </LI>
       <LI>
-        Placeholder : <INPUT  data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
+        Placeholder : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Placeholder' id="${field_id}-placeholder"/><BR/>
       </LI>
       <LI>
-        Type : <SELECT data-field="1" name='Type' id="${field_id}-type">
+        Type : <SELECT data-field="1" name='Type' id="${field_id}-type" ondragstart="return false" draggable="false">
           <OPTGROUP label="Text Types">
             <OPTION value="text">Text</OPTION>
             <OPTION value="email">Email</OPTION>
@@ -371,6 +468,15 @@ export function createInputInputs(base_id:string, respondable_container_id: stri
       </LI>
       <LI><BUTTON id="${in_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${in_id}')">Delete</BUTTON></LI>
     </UL>`;
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
+
     return field_id
 }
 
@@ -384,16 +490,16 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
   container.innerHTML = `SelectGroup Creation Info:<BR/>
     <UL>
       <LI>
-        Name : <INPUT  data-field="1" name='Name' id="${field_id}-name"/><BR/>
+        Name : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+        Label : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT  data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
+        Required : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
       </LI>
       <LI>
-        Select type : <SELECT  data-field="1" name='SelectionCategory' type="checkbox" id="${field_id}-selectioncatergory">
+        Select type : <SELECT  data-field="1" name='SelectionCategory' type="checkbox" id="${field_id}-selectioncatergory" ondragstart="return false" draggable="false">
           <OPTION value="checkbox">checkbox</OPTION>
           <OPTION value="radio">radio</OPTION>
         </SELECT><BR/>
@@ -404,13 +510,22 @@ export function createSelectGroup(base_id:string, respondable_container_id:strin
         <BUTTON onclick="FormLibrary.removeListItem(this, 'checkable')" data-link-id="${field_id}">-</BUTTON><BR/>
         <OL data-field="1" data-select="1" id="${field_id}-checkable">
           <LI>
-            <INPUT placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-checkable-label-0"/>
-            <INPUT placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-checkable-value-0"/>
+            <INPUT ondragstart="return false" draggable="false" placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-checkable-label-0"/>
+            <INPUT ondragstart="return false" draggable="false" placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-checkable-value-0"/>
           </LI>
         </OL>
       </LI>
       <LI><BUTTON id="${select_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${select_id}')">Delete</BUTTON></LI>
     </UL>`;
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
+
     return field_id
 }
 
@@ -420,8 +535,8 @@ export function addListField(button : HTMLButtonElement , type:string) {
   let li = document.createElement("LI")
   let child_count = ol.children.length
   li.innerHTML = `
-    <INPUT placeholder="Label" data-list-item-no="${child_count}" data-field="1" name='Label' id="${parent_id}-${type}-label-${child_count}"/>
-    <INPUT placeholder="Value" data-list-item-no="${child_count}" data-field="1" name='Value' id="${parent_id}-${type}-value-${child_count}"/>
+    <INPUT ondragstart="return false" draggable="false" placeholder="Label" data-list-item-no="${child_count}" data-field="1" name='Label' id="${parent_id}-${type}-label-${child_count}"/>
+    <INPUT ondragstart="return false" draggable="false" placeholder="Value" data-list-item-no="${child_count}" data-field="1" name='Value' id="${parent_id}-${type}-value-${child_count}"/>
   `
   ol.appendChild(li)
 }
@@ -444,13 +559,13 @@ export function createOptionsGroup(base_id:string, respondable_container_id:stri
   container.innerHTML = `OptionGroup Creation Info:<BR/>
     <UL>
       <LI>
-        Name : <INPUT  data-field="1" name='Name' id="${field_id}-name"/><BR/>
+        Name : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Name' id="${field_id}-name"/><BR/>
       </LI>
       <LI>
-        Label : <INPUT  data-field="1" name='Label' id="${field_id}-label"/><BR/>
+        Label : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Label' id="${field_id}-label"/><BR/>
       </LI>
       <LI>
-        Required : <INPUT  data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
+        Required : <INPUT ondragstart="return false" draggable="false" data-field="1" name='Required' type="checkbox" id="${field_id}-required"/><BR/>
       </LI>
       <LI>
       Option Fields :
@@ -458,13 +573,22 @@ export function createOptionsGroup(base_id:string, respondable_container_id:stri
         <BUTTON onclick="FormLibrary.removeListItem(this, 'option')" data-link-id="${field_id}">-</BUTTON><BR/>
         <OL data-field="1" data-select="1" id="${field_id}-option">
           <LI>
-            <INPUT placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-option-label-0"/>
-            <INPUT placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-option-value-0"/>
+            <INPUT ondragstart="return false" draggable="false" placeholder="Label"  data-list-item-no="0" data-field="1" name='Label' id="${field_id}-option-label-0"/>
+            <INPUT ondragstart="return false" draggable="false" placeholder="Value"  data-list-item-no="0" data-field="1" name='Value'  id="${field_id}-option-value-0"/>
           </LI>
         </OL>
       </LI>
       <LI><BUTTON id="${opt_id}" onclick="FormLibrary.deleteContainer('${respondable_container_id}' , '${opt_id}')">Delete</BUTTON></LI>
     </UL>`;
+
+    let drop_icon = document.createElement('DIV');
+    drop_icon.setAttribute("draggable" , "true");
+    drop_icon.className = "drop-icon";
+    drop_icon.textContent = " . . . ";
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    container.appendChild(drop_icon);
+
     return field_id
 }
 

@@ -402,7 +402,6 @@ func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
 			r_map["Identifier"] = r.Identifier
 			r_map["SubmittedAt"] = strconv.Itoa(int(r.SubmittedAt))
 
-				// {% include 'mod-views/mod-reply-body.twig' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
 			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-reply-body.twig", map[string]stick.Value{
 				"storagename": form_construct.StorageName(), "reply": r_map , "form": form_construct,
 			})
