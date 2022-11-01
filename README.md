@@ -3,10 +3,6 @@ Kissu's application for handling, creating and linking forms. Usefull for feedba
 Mod UI is done through ReactJS while the user UI is done through simple HTML which is augmented by JS.<br/>
 Javascript is handled through a package containing functions which are used by the HTML pages inside of SCRIPT tags
 
-## Timetable
-- Sept 20th - 30th
-- 80 hours
-
 ## Notes
 - Routing will be manually tested.
 - The UI(and individual templates) will be manually tested.
