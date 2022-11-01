@@ -229,7 +229,7 @@ export function createNewSubgroup( button: HTMLButtonElement): string{
   let group_id = "group" + (Date.now() + Math.random())
   let container = document.createElement('DIV');
   container.setAttribute("style" , "")
-  container.className =  "subgroup form-group"
+  container.className =  "sub-group form-group"
   container.id =  group_id + "-group"
   container.innerHTML = `<LABEL>Group Label : <INPUT ondragstart="return false" draggable="false" type="text" name="form-label" id="${group_id}-label"/> </LABEL> <br/>
   <LABEL>Group ID : <INPUT ondragstart="return false" draggable="false" type="text" name="id" id="${group_id}-id"/></LABEL> <br/>
@@ -238,7 +238,22 @@ export function createNewSubgroup( button: HTMLButtonElement): string{
   <BUTTON  onclick="FormLibrary.createNewSubgroup(this)" data-link-id="${group_id}">Create New Group Below Last Respondable</BUTTON><br/>
   <BUTTON  onclick="FormLibrary.deleteContainer('${parent_id + "-group"}' , '${ group_id + "-group"}')">Delete Subgroup</BUTTON><br/>
   <SPAN  class="respondable-container" id="${group_id}-respondables"></SPAN><BR/>
-  `
+  `;
+  container.ondrop = handleContainerDropWithinParent
+  container.ondragenter = handleContainerDragEnterWithinParent
+  container.ondragleave = handleContainerDragLeaveWithinParent
+  container.ondragover = function (e) {
+    e.preventDefault()
+  }
+
+  let drop_icon = document.createElement('DIV');
+  drop_icon.setAttribute("draggable" , "true");
+  drop_icon.className = "drop-icon";
+  drop_icon.textContent = " . . . ";
+  drop_icon.ondragstart = handleContainerDragStartWithinParent
+  drop_icon.ondragend = handleContainerDragEndWithinParent
+  container.appendChild(drop_icon);
+
   parent_container.appendChild(container)
   return group_id
 }
@@ -274,7 +289,6 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
     container.ondragover = function (e) {
       e.preventDefault()
     }
-    respondable_container.appendChild(container)
 
     let drop_icon = document.createElement('DIV');
     drop_icon.setAttribute("draggable" , "true");
@@ -284,9 +298,40 @@ export function createNewResponseElement(button: HTMLButtonElement ): ({base_id:
     drop_icon.ondragend = handleContainerDragEndWithinParent
     container.appendChild(drop_icon);
 
+    respondable_container.appendChild(container);
     // CREATE NEW AT END
     // INSERT IN POSITION
     return { base_id: res_id, respondable_container_id: parent_id + "-respondables" , container: <HTMLDivElement>container  }
+}
+
+function attatchDragAndDrop(container){
+  let sgroups = container.getElementsByClassName("sub-group")
+  for (let i = 0 ; i < sgroups.length ; i++){
+    sgroups[i].ondrop = handleContainerDropWithinParent
+    sgroups[i].ondragenter = handleContainerDragEnterWithinParent
+    sgroups[i].ondragleave = handleContainerDragLeaveWithinParent
+    sgroups[i].ondragover = function (e) {
+      e.preventDefault()
+    }
+    let drop_icon = sgroups[i].getElementsByClassName("drop-icon").item(0)
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    sgroups[i].appendChild(drop_icon);
+  }
+
+  let rgroups = container.getElementsByClassName("respondable-group")
+  for (let i = 0 ; i < rgroups.length ; i++){
+    rgroups[i].ondrop = handleContainerDropWithinParent
+    rgroups[i].ondragenter = handleContainerDragEnterWithinParent
+    rgroups[i].ondragleave = handleContainerDragLeaveWithinParent
+    rgroups[i].ondragover = function (e) {
+      e.preventDefault()
+    }
+    let drop_icon = rgroups[i].getElementsByClassName("drop-icon").item(0)
+    drop_icon.ondragstart = handleContainerDragStartWithinParent
+    drop_icon.ondragend = handleContainerDragEndWithinParent
+    rgroups[i].appendChild(drop_icon);
+  }
 }
 
 function handleContainerDragStartWithinParent(e){
@@ -338,19 +383,16 @@ function handleContainerDropWithinParent(e){
 
   let this_copy = this.cloneNode(true);
   parent.insertBefore(this_copy, actively_dragged);
-  this_copy.ondrop = handleContainerDropWithinParent
-  this_copy.ondragenter = handleContainerDragEnterWithinParent
-  this_copy.ondragleave = handleContainerDragLeaveWithinParent
-  this_copy.ondragover = function (e) {
-    e.preventDefault()
-  };
   parent.insertBefore(actively_dragged, this);
   parent.removeChild(this)
+
+  attatchDragAndDrop(this_copy)
+  correctDataLinks(this_copy)
   console.log("Action Drop" , e , this)
 }
 
 export function deleteContainer(base_container_id:string , sub_container_id:string){
-  document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));zz
+  document.getElementById(base_container_id).removeChild(document.getElementById( sub_container_id));
 }
 
 export function createTextAreaInputs(base_id:string, respondable_container_id: string ,  container: HTMLDivElement): string{
