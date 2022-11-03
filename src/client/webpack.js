@@ -3,7 +3,7 @@ const Version = "0.3.1";
 
 module.exports = {
   mode: "production",
-  entry: './src/index.ts',
+  entry: './src/',
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx"]
     },

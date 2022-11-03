@@ -45,7 +45,7 @@ textarea {
     margin: 6px 0;
 }
 .drop-icon{
-  cursor:grab;
+  cursor:row-resize;
 }
 .form-group {
     border: 1px solid;
