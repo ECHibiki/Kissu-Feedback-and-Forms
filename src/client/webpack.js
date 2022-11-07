@@ -1,5 +1,5 @@
 const TerserPlugin = require("terser-webpack-plugin");
-const Version = "0.3.1";
+const Version = "0.3.2";
 
 module.exports = {
   mode: "production",

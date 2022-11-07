@@ -24,7 +24,8 @@
         {% endfor %}
     {% elseif respondable.GetType() == "optiongroup" %}
        <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
-        <SELECT name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} >
+        <SELECT name="{{respondable.Object.Field.Name}}">
+          {% if respondable.Object.Field.Required %}<OPTION value="">--</OPTION>{% endif %}
           {% for opt in respondable.Object.Options %}
             <OPTION value="{{opt.Value}}">{{ opt.Label }}</OPTION>
           {% endfor %}
@@ -34,7 +35,7 @@
     </DIV>
   {% endfor %}
 
-  {% for group in field.FormFields %}
+  {% for group in field.SubGroups %}
     {% include 'user-views/user-form-group.twig' with {'field':group} %}
   {% endfor %}
 </DIV>

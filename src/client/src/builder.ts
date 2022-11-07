@@ -158,7 +158,7 @@ export function buildDropdownResponse(container:HTMLDivElement , json:any) : str
 
       let list = "";
       json.formatted_replies.forEach((r) => {
-        list += `<LI class='item-li'>${r}</LI>`;
+        list += `<LI class='item-li' id='row-${r.Name}-${r.ID}'>${r.Body}</LI>`;
       });
       return list
     })()
@@ -282,15 +282,16 @@ export function convertContainerToJSON(base_json, form_stack){
   // 3. Collect subgroups
     // R. Return to 1 and send the JSON over to be filled out
   // 4. JSON is filled out, return JSON
-  let depth = 0
   while( form_stack.length != 0 ) {
     let level_order = 0
     let subgroup = form_stack.shift()
     let routes = subgroup.paths
     let first_route = routes[0]
     let current_form_field = base_json["FormFields"][first_route]
+    let depth = 0
     for (let route_position = 1 ; route_position < routes.length ; route_position++){
-      current_form_field = current_form_field["SubGroups"][routes[route_position]];
+      depth++;
+      current_form_field = current_form_field["SubGroups"][routes[route_position].pop()];
     }
     for (let c = 0 ; c < subgroup.node.childNodes.length ; c++){
       let child = subgroup.node.childNodes[c];
@@ -299,9 +300,10 @@ export function convertContainerToJSON(base_json, form_stack){
       }
       if (child.className.indexOf("form-group") != -1){
         let r = routes
-        r.push(level_order)
-        form_stack.unshift( {node: child , paths: r} )
+        r[depth + 1] ? "" : r.push([]);
+        r[depth + 1].push(level_order)
         level_order += 1;
+        form_stack.unshift( {node: child , paths: r} )
         // If response_object Fields are not passed by reference then we'll have to do a reconstruction of the response object using current_form_field
         // Probably would be slow,  but is the first thing that comes to mind
         current_form_field["SubGroups"].push({
@@ -311,7 +313,6 @@ export function convertContainerToJSON(base_json, form_stack){
           SubGroups: [],
           Respondables: [],
         })
-
         // a respondable group
       } else if(child.className.indexOf("respondable-container") != -1) {
         if(child.childNodes.length == 0 ){

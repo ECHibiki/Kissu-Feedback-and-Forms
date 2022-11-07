@@ -383,7 +383,11 @@ func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
 		}
 
 		var form_construct former.FormConstruct
-		var parse_list []string
+		var parse_list []struct{
+			Body string
+			Name string
+			ID int
+		}
 		err = json.Unmarshal([]byte(form_data.FieldJSON), &form_construct)
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing form"})
@@ -409,7 +413,10 @@ func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
 				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Issue parsing template"})
 				return
 			}
-			parse_list = append(parse_list, template)
+			parse_list = append(parse_list,  struct{
+				Body string
+				Name string
+				ID int}{ Body: template , Name: form_construct.FormName , ID: int(r.ID) } )
 		}
 		c.JSON(http.StatusOK, gin.H{ "formatted_replies": parse_list})
 	}
@@ -438,6 +445,7 @@ func userServeForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Could not retrieve source file"})
 			return
 		}
+		fmt.Println(rebuild_group)
 		template, err := templater.ReturnFilledTemplate(env, "user-views/user-form.twig", map[string]stick.Value{"version": globals.ProjectVersion, "form": rebuild_group})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})

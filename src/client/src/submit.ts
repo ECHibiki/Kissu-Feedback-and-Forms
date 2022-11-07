@@ -49,7 +49,7 @@ function sendCreateRequest(form: string , url:string){
   x.send(f)
 }
 
-function postDeleteForm(name: string , number:string){
+export function postDeleteForm(name: string , number:string){
   let conf = confirm('This will remove the form from the display and database.\n\
     Information files will retained on the server as a record until a duplicate named form is created')
   if (conf == true){
