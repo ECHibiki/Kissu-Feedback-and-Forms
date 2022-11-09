@@ -13,7 +13,7 @@ import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/tools"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
 	"github.com/gin-gonic/gin"
-	"github.com/tyler-sommer/stick"
+	"github.com/flosch/pongo2"
 
 	"fmt"
 	"net/http"
@@ -26,13 +26,13 @@ import (
   // order of items is as follows: C , DB  , CFG , Stick
   // Form search is name then number
 
-func serveTwigTemplate(c *gin.Context, status int, template string) {
+func servePongoTemplate(c *gin.Context, status int, template string) {
 	c.Header("Content-Type", "text/html")
 	c.String(status, template)
 }
 
 // bundle args into a struct
-func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *gin.Engine {
+func routeGin(cfg *types.ConfigurationSettings, db *sql.DB) *gin.Engine {
 
 	// use args flags to set
 	var gin_mode string
@@ -49,29 +49,29 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *g
 	{
 		gin_engine.Static("/assets", globals.RootDirectory+"public") //
 
-		gin_engine.GET("/", generalGetHomepageHandler(stick)) //
-		gin_engine.POST("/", modPostLoginForm(db, cfg, stick))
+		gin_engine.GET("/", generalGetHomepageHandler()) //
+		gin_engine.POST("/", modPostLoginForm(db, cfg))
 
 		public_group := gin_engine.Group("/public")
 		{
-			public_group.GET("/", generalGetHomepageHandler(stick)) //
+			public_group.GET("/", generalGetHomepageHandler()) //
 			// Handle form requests and build forms
-			public_group.GET("/forms/:formname/:formnum", userServeForm(db, stick)) //
+			public_group.GET("/forms/:formname/:formnum", userServeForm(db)) //
 			public_group.POST("/forms/:formname/:formnum", userPostForm(db))        //
 
 		}
 
 		// Verify authentication down this route
 		mod_group := gin_engine.Group("/mod")
-		mod_group.Use(authenticationMiddleware(db, stick))
+		mod_group.Use(authenticationMiddleware(db))
 		{
 			// list menu CREATE/VIEW
-			mod_group.GET("/", modServeHomepageHandler(stick)) //
+			mod_group.GET("/", modServeHomepageHandler()) //
 			// build a form
-			mod_group.GET("/create", modServeCreateForm(stick))   //
+			mod_group.GET("/create", modServeCreateForm())   //
 			mod_group.POST("/create", modPostCreateForm(db, cfg)) //
 			// edit a form
-			mod_group.GET("/edit/:formnum", modServeEditForm(db, stick))
+			mod_group.GET("/edit/:formnum", modServeEditForm(db))
 			mod_group.POST("/edit/:formnum", modPostEditForm(db, cfg))
 			// delete forms
 			mod_group.POST("/form/delete/:formname/:formnum", modPostDeleteForm(db))
@@ -80,11 +80,11 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *g
 			mod_group.GET("/form/delete/:formname/:formnum", modServeDelete())
 			mod_group.GET("response/delete/:formname/:respnum", modServeDelete())
 			// view all forms
-			mod_group.GET("/view/", modServeViewAllForms(db, stick))
+			mod_group.GET("/view/", modServeViewAllForms(db))
 			// view a form with responses
-			mod_group.GET("/view/:formnum", modServeViewSingleForm(db, stick)) // 6
+			mod_group.GET("/view/:formnum", modServeViewSingleForm(db)) // 6
 			// view a response
-			mod_group.GET("/view/:formnum/:respnum", modServeViewSingleResponse(db, stick))
+			mod_group.GET("/view/:formnum/:respnum", modServeViewSingleResponse(db))
 			// download everything of a form
 			mod_group.GET("/download/:formname/:formnum", modServeDownloadForm(db))
 			mod_group.GET("/download/:formname/downloadable.tar.gz", modDownloadableForm())
@@ -93,7 +93,7 @@ func routeGin(cfg *types.ConfigurationSettings, db *sql.DB, stick *stick.Env) *g
 			// Retrieve various forms
 			api_group := mod_group.Group("api/")
 			{
-				api_group.GET("/form/:formnum", modServeAPIGetForm(db , stick))
+				api_group.GET("/form/:formnum", modServeAPIGetForm(db ))
 			}
 
 		}
@@ -115,26 +115,26 @@ func placeholderHandler() gin.HandlerFunc {
 	}
 }
 
-func generalGetHomepageHandler(env *stick.Env) gin.HandlerFunc {
+func generalGetHomepageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		template, err := templater.ReturnFilledTemplate(env, "user-views/user-home.twig", map[string]stick.Value{"version": globals.ProjectVersion})
+		template, err := templater.ReturnFilledTemplate("user-views/user-home.html", pongo2.Context{"version": globals.ProjectVersion})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Home generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 }
 
 // Handle route to /mod
-func modServeHomepageHandler(env *stick.Env) gin.HandlerFunc {
+func modServeHomepageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-home.twig", map[string]stick.Value{"version": globals.ProjectVersion})
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-home.html", pongo2.Context{"version": globals.ProjectVersion})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Homepage generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	//Oct3
 	// login
@@ -142,21 +142,21 @@ func modServeHomepageHandler(env *stick.Env) gin.HandlerFunc {
 }
 
 // Handle route /mod/create
-func modServeCreateForm(env *stick.Env) gin.HandlerFunc {
+func modServeCreateForm() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-create.twig", map[string]stick.Value{"version": globals.ProjectVersion})
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-create.html", pongo2.Context{"version": globals.ProjectVersion})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Creator generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	//Oct3
 	// Display the form builder and JS to get it to work
 }
 
 // Handle /mod/edit/FORMNUMBER/
-func modServeEditForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func modServeEditForm(db *sql.DB, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		formnum := c.Param("formnum")
 		num, err := strconv.ParseInt(formnum , 10 , 64)
@@ -176,20 +176,20 @@ func modServeEditForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Invalid Unmarshaling of form"})
 			return
 		}
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-edit.twig", map[string]stick.Value{
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-edit.html", pongo2.Context{
 			"version": globals.ProjectVersion, "id": form_data.ID, "form": form_construct, "form_str": form_data.FieldJSON,
 		})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	// Display the form builder and JS to get it to work
 }
 
 // Handle route /mod/view and /mod/api/all
-func modServeViewAllForms(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func modServeViewAllForms(db *sql.DB, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_data_list, err := returner.GetAllForms(db)
 		if err != nil {
@@ -197,18 +197,18 @@ func modServeViewAllForms(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get forms"})
 			return
 		}
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-form-list.twig", map[string]stick.Value{"version": globals.ProjectVersion, "form_list": form_data_list})
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-form-list.html", pongo2.Context{"version": globals.ProjectVersion, "form_list": form_data_list})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	// view form list
 }
 
 // Handle route /mod/view/FORMNUMBER and /mod/api/#
-func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func modServeViewSingleForm(db *sql.DB, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
     if err != nil {
@@ -242,19 +242,19 @@ func modServeViewSingleForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Can't get form replies"})
 			return
 		}
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-reply-list.twig", map[string]stick.Value{
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-reply-list.html", pongo2.Context{
 			"version": globals.ProjectVersion, "form": form_construct, "formnum": form_data.ID, "storagename": form_data.Name, "replies": reply_list,
 		})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 }
 
 // Handle route /mod/view/FORMNUMBER/RESPONSENUMBER and /mod/api/#/#
-func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func modServeViewSingleResponse(db *sql.DB, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
@@ -295,12 +295,12 @@ func modServeViewSingleResponse(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		reply_construct["Identifier"] = reply_data.Identifier
 		reply_construct["SubmittedAt"] = strconv.Itoa(int(reply_data.SubmittedAt))
 
-		template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-singular-reply.twig", map[string]stick.Value{"version": globals.ProjectVersion, "storagename": form_data.Name, "form": form_construct, "reply": reply_construct})
+		template, err := templater.ReturnFilledTemplate("mod-views/mod-singular-reply.html", pongo2.Context{"version": globals.ProjectVersion, "storagename": form_data.Name, "form": form_construct, "reply": reply_construct})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	// view response
 }
@@ -360,7 +360,7 @@ func modServeAPIGetAll() gin.HandlerFunc {
 	}
 
 }
-func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
+func modServeAPIGetForm(db *sql.DB,  ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		form_num, err := strconv.ParseInt(c.Param("formnum") , 10 , 64)
 		if err != nil {
@@ -406,7 +406,7 @@ func modServeAPIGetForm(db *sql.DB,  env *stick.Env) gin.HandlerFunc {
 			r_map["Identifier"] = r.Identifier
 			r_map["SubmittedAt"] = strconv.Itoa(int(r.SubmittedAt))
 
-			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-reply-body.twig", map[string]stick.Value{
+			template, err := templater.ReturnFilledTemplate("mod-views/mod-reply-body.html", pongo2.Context{
 				"storagename": form_construct.StorageName(), "reply": r_map , "form": form_construct,
 			})
 			if err != nil {
@@ -429,7 +429,7 @@ func modServeAPIGetResponse() gin.HandlerFunc {
 }
 
 // Handle route to /forms/FORMNAME/NUMBER
-func userServeForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func userServeForm(db *sql.DB, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// /:formname/:formnum
 		form_name := c.Param("formname")
@@ -445,13 +445,12 @@ func userServeForm(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Could not retrieve source file"})
 			return
 		}
-		fmt.Println(rebuild_group)
-		template, err := templater.ReturnFilledTemplate(env, "user-views/user-form.twig", map[string]stick.Value{"version": globals.ProjectVersion, "form": rebuild_group})
+		template, err := templater.ReturnFilledTemplate("user-views/user-form.html", pongo2.Context{"version": globals.ProjectVersion, "form": rebuild_group})
 		if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 			return
 		}
-		serveTwigTemplate(c, http.StatusOK, template)
+		servePongoTemplate(c, http.StatusOK, template)
 	}
 	//Oct3
 }
@@ -465,18 +464,18 @@ func modServeDelete() gin.HandlerFunc {
 
 /* POST Handlers */
 
-func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.Env) gin.HandlerFunc {
+func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "text/html")
 		json := c.PostForm("json")
 		stored_pass, err := getStoredPassword(db)
 		if err != nil && json == "" {
-			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "DB Error"})
+			template, err := templater.ReturnFilledTemplate("mod-views/mod-login.html", pongo2.Context{"version": globals.ProjectVersion, "error": "DB Error"})
 			if err != nil {
 				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 				return
 			}
-			serveTwigTemplate(c, http.StatusInternalServerError, template)
+			servePongoTemplate(c, http.StatusInternalServerError, template)
 		} else if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
 		}
@@ -486,12 +485,12 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 		if err != nil {
 			fmt.Printf("%s" , err.Error())
 			if json == "" {
-				template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "Invalid Password"})
+				template, err := templater.ReturnFilledTemplate("mod-views/mod-login.html", pongo2.Context{"version": globals.ProjectVersion, "error": "Invalid Password"})
 				if err != nil {
           tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 					return
 				}
-				serveTwigTemplate(c, http.StatusUnauthorized, template)
+				servePongoTemplate(c, http.StatusUnauthorized, template)
 			} else if err != nil {
 				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
 			}
@@ -504,12 +503,12 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, env *stick.E
 			err = StoreLogin(db, login_fields)
 			if err != nil {
 				if json == "" {
-					template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion, "error": "Login Storage Error"})
+					template, err := templater.ReturnFilledTemplate("mod-views/mod-login.html", pongo2.Context{"version": globals.ProjectVersion, "error": "Login Storage Error"})
 					if err != nil {
             tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 						return
 					}
-					serveTwigTemplate(c, http.StatusInternalServerError, template)
+					servePongoTemplate(c, http.StatusInternalServerError, template)
 				} else if err != nil {
 					tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Login Storage Error"})
 				}
@@ -764,7 +763,7 @@ func modPostDeleteResponse(db *sql.DB) gin.HandlerFunc {
 /* middleware */
 // return function instead of handling directly to potentially pass in command line arguments on initialization
 
-func authenticationMiddleware(db *sql.DB, env *stick.Env) gin.HandlerFunc {
+func authenticationMiddleware(db *sql.DB, ) gin.HandlerFunc {
 	//Oct3
 	return func(c *gin.Context) {
 		cookie_verification, err := c.Cookie("verified")
@@ -775,14 +774,14 @@ func authenticationMiddleware(db *sql.DB, env *stick.Env) gin.HandlerFunc {
 		if err != nil && json != "" {
 			tools.AbortWithJSONError( c , http.StatusUnauthorized , err.Error() , gin.H{"error": "Unauthorized"})
 		} else if err != nil {
-			// ReturnFilledTemplate(env *stick.Env, template_path string, value_map map[string]stick.Value) (string , error)
-			template, err := templater.ReturnFilledTemplate(env, "mod-views/mod-login.twig", map[string]stick.Value{"version": globals.ProjectVersion})
+			// ReturnFilledTemplate(, template_path string, value_map pongo2.Context) (string , error)
+			template, err := templater.ReturnFilledTemplate("mod-views/mod-login.html", pongo2.Context{"version": globals.ProjectVersion})
 			if err != nil {
 				tools.AbortWithJSONError( c , http.StatusUnauthorized , err.Error() , gin.H{"error": "Unauthorized - Login Form Tenmplate Error"})
 				return
 			}
 			c.Header("Content-Type", "text/html")
-			serveTwigTemplate(c, http.StatusUnauthorized, template)
+			servePongoTemplate(c, http.StatusUnauthorized, template)
 			c.Abort()
 		}
 		c.Next()

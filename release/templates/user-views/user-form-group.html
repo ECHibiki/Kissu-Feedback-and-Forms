@@ -1,0 +1,47 @@
+<DIV id="{{ field.ID }}" class="form-group">
+  <H2>{{ field.Label }}</H2>
+  <P>{{ field.Description }}</P>
+  {% for respondable in field.Respondables %}
+  <DIV id="{{respondable.Object.Field.Name}}" class="respondable-group {{ respondable.Type|tostring }}">
+    {% if respondable.Type|tostring == "textarea" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+      <TEXTAREA name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} placeholder="{{respondable.Object.Placeholder}}"></TEXTAREA> </LABEL>
+    {% elif respondable.Type|tostring == "genericinput" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+      <INPUT name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.Object.Type|tostring}}" /> </LABEL>
+    {% elif respondable.Type|tostring == "fileinput" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+      <INPUT name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} type="file" data-allowed-regex="{{ respondable.Object.AllowedExtRegex }}"  data-max-size="{{ respondable.Object.MaxSize }}" /> </LABEL>
+    {% elif respondable.Type|tostring == "selectiongroup" %}
+        <P>{{respondable.Object.Field.Label}}</P>
+        {% for check in respondable.Object.CheckableItems %}
+          {% if respondable.Object.SelectionCategory|tostring == "checkbox"%}
+            {% set chkname = respondable.Object.Field.Name|add:"-"|add:forloop.Counter %}
+          {% else %}
+            {% set chkname = respondable.Object.Field.Name  %}
+          {% endif %}
+          <LABEL> {{ check.Label }}  <INPUT
+            type="{{ respondable.Object.SelectionCategory|tostring }}"
+            data-required="{{ respondable.Object.Field.Required|yesno:"true,false" }}"
+            name="{{ chkname }}" value="{{check.Value}}"
+          /></LABEL>
+        {% endfor %}
+    {% elif respondable.Type|tostring == "optiongroup" %}
+       <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+        <SELECT name="{{respondable.Object.Field.Name}}">
+          {% if respondable.Object.Field.Required %}<OPTION value="">--</OPTION>{% endif %}
+          {% for opt in respondable.Object.Options %}
+            <OPTION value="{{opt.Value}}">{{ opt.Label }}</OPTION>
+          {% endfor %}
+        </SELECT>
+      </LABEL>
+    {% endif %}
+    </DIV>
+  {% endfor %}
+
+  {% for group in field.SubGroups %}
+    {%with info="will recurse infinitely without template as variable" template_name="user-form-group.html" field=group %}
+        {% include template_name %}
+     {%endwith%}
+  {% endfor %}
+</DIV>

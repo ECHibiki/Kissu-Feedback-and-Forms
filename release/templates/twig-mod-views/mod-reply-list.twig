@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<HTML>
+  <HEAD>
+    {% include 'mod-views/mod-header.twig' %}
+    <TITLE>Kissu Feedback & Forms - Replies to {{ form.ID }}</TITLE>
+  </HEAD>
+  <BODY>
+  <H1>Responses to: {{ form.FormName }}</H1>
+    <P>Description: {{ form.Description }}</P>
+    <SPAN><A href="/mod/view/">Back to Forms</A></SPAN>
+    <SPAN><A href="/mod/download/{{ storagename }}/{{ formnum }}" target="_blank">DOWNLOAD</A></SPAN>
+    <OL>
+    {% for reply in replies %}
+      <LI id="row-{{ storagename }}-{{ reply.ID }}">
+        {% include 'mod-views/mod-reply-body.twig' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
+      </LI>
+    {% endfor %}
+    </OL>
+    <HR/>
+    {% include 'mod-views/mod-footer.twig' %}
+  </BODY>
+</HTML>

@@ -4,7 +4,7 @@ import (
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/templater"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
-	"github.com/tyler-sommer/stick"
+	"github.com/flosch/pongo2"
 	"path/filepath"
 	"encoding/json"
 	"compress/gzip"
@@ -20,7 +20,7 @@ import (
 	"io"
 )
 
-func RenderTestingTemplate[T int64 | string](db *sql.DB, env *stick.Env, root_dir string, db_key T) (string, error) {
+func RenderTestingTemplate[T int64 | string](db *sql.DB, root_dir string, db_key T) (string, error) {
 
 	var returned_form types.FormDBFields
 	var rebuild_group former.FormConstruct
@@ -43,10 +43,10 @@ func RenderTestingTemplate[T int64 | string](db *sql.DB, env *stick.Env, root_di
 		return "", err
 	}
 	// Turn rebuild_group into a templatable format
-	var construction_variables map[string]stick.Value = map[string]stick.Value{"form": rebuild_group}
+	var construction_variables pongo2.Context = pongo2.Context{"form": rebuild_group}
 
 	// Render a form only used for testing
-	testing_form_render, err := templater.ReturnFilledTemplate(env, root_dir+"/templates/test-views/render-test.twig", construction_variables)
+	testing_form_render, err := templater.ReturnFilledTemplate(root_dir+"/templates/test-views/render-test.twig", construction_variables)
 	return testing_form_render, err
 }
 

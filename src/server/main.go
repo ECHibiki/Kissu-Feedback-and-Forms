@@ -50,9 +50,8 @@ func main() {
 		db, cfg = initializeFromConfigFile(globals.RootDirectory)
 	}
 
-	stick := templater.ReturnFileSystemTemplateHandler(globals.RootDirectory + "templates")
-	// stick := templater.ReturnTemplateHandler()
+ templater.SetRootDir(globals.RootDirectory + "templates/")
 
-	gin_engine := routeGin(&cfg, db, stick)
+	gin_engine := routeGin(&cfg, db)
 	runGin(gin_engine, cfg.StartupPort)
 }

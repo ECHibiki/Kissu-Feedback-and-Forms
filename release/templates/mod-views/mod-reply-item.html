@@ -1,0 +1,51 @@
+<DIV id="{{ field.ID }}" class="form-group">
+  <H2>{{ field.Label }}</H2>
+  <P>{{ field.Description }}</P>
+  {% for respondable in field.Respondables %}
+  <DIV id="{{respondable.Object.Field.Name}}" class="respondable-group  {{ respondable.Type|tostring }}">
+    {% if respondable.Type|tostring == "textarea" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+      <TEXTAREA class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required|yesno:"true,false,false" }}" placeholder="{{respondable.Object.Placeholder}}">
+{{ reply|keyvalue:respondable.Object.Field.Name }}
+      </TEXTAREA> </LABEL>
+    {% elif respondable.Type|tostring == "genericinput" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+      <INPUT value="{{ reply|keyvalue:respondable.Object.Field.Name }}" class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" {% if respondable.Object.Field.Required %}required="true"{% endif %} placeholder="{{respondable.Object.Placeholder}}" type="{{respondable.Object.Type|tostring}}" /> </LABEL>
+    {% elif respondable.Type|tostring == "fileinput" %}
+      <LABEL> {% if respondable.Object.Field.Label != "" %}  {{respondable.Object.Field.Label}}<br/> {% endif %}
+      Download: <A href="/mod/files/{{ storagename }}/{{ reply.Identifier }}/{{reply|keyvalue:respondable.Object.Field.Name}}" class="user-file" data-name="{{respondable.Object.Field.Name}}">{{reply|keyvalue:respondable.Object.Field.Name}}</A> </LABEL>
+    {% elif respondable.Type|tostring == "selectiongroup" %}
+        <P>{{respondable.Object.Field.Label}}</P>
+        {% for check in respondable.Object.CheckableItems %}
+          {% if respondable.Object.SelectionCategory|tostring == "checkbox"%}
+            {% set chkname = respondable.Object.Field.Name|add:"-"|add:forloop.Counter %}
+          {% else %}
+            {% set chkname = respondable.Object.Field.Name  %}
+          {% endif %}
+          <LABEL>{{ check.Label }}<INPUT class="readonly-input" onclick="return false" readonly
+            {% if reply|keyvalue:chkname == check.Value %} checked {% endif %}
+            type="{{ respondable.Object.SelectionCategory|tostring }}" data-required="{{ respondable.Object.Field.Required|yesno:"true,false" }}"
+            data-name="{{respondable.Object.Field.Name}}{% if respondable.Object.SelectionCategory|tostring == "checkbox" %}-{{ forloop.Counter }}{% endif %}"
+            value="{{check.Value}}"
+          /></LABEL>
+        {% endfor %}
+    {% elif respondable.Type|tostring == "optiongroup" %}
+        <LABEL> {% if respondable.Object.Field.Label != "" %} {{respondable.Object.Field.Label}}<br/> {% endif %}
+        <SELECT value="{{ reply|keyvalue:respondable.Object.Field.Name }}" class="readonly-input" onclick="return false" readonly data-name="{{respondable.Object.Field.Name}}" required="{{ respondable.Object.Field.Required|yesno:"true,false" }}" >
+          {% if respondable.Object.Field.Required %}<OPTION value="">--</OPTION>{% endif %}
+          {% for opt in respondable.Object.Options %}
+            <OPTION value="{{opt.Value}}" {% if reply|keyvalue:respondable.Object.Field.Name == opt.Value %} selected="1" {% endif %}>{{ opt.Label }}</OPTION>
+          {% endfor %}
+        </SELECT>
+      </LABEL>
+    {% endif %}
+    </DIV>
+    <BR/>
+  {% endfor %}
+
+  {% for group in field.SubGroups %}
+    {%with info="will recurse infinitely without template as variable" template_name="mod-reply-item.html" %}
+        {%include template_name with field=group reply=reply  %}
+     {%endwith%}
+  {% endfor %}
+</DIV>

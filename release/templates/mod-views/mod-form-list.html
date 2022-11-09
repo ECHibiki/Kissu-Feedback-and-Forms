@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<HTML>
+  <HEAD>
+    {% include 'mod-header.html' %}
+    <TITLE>Kissu Feedback & Forms - Create Form</TITLE>
+    <SCRIPT></SCRIPT>
+  </HEAD>
+  <BODY>
+    <H1>Form List</H1>
+    <A href="/mod">Home</A>
+    <P>A URL list of all forms</P>
+    <UL>
+      {% for form in form_list %}
+      <LI id="row-{{ form.Name }}-{{ form.ID }}" title="Unix UpdatedAt: {{ form.UpdatedAt }}">
+        <DIV class="item-container" id="container-{{ form.ID }}">
+          <DIV class="item-toggle"><SPAN><A href="/mod/view/{{ form.ID }}" onclick="return FormLibrary.dropdownList(this, '{{ form.ID }}')"><SPAN>▶</SPAN> {{ form.Name }} </A></SPAN></DIV>
+          <DIV class="item-controls">
+            <SPAN><A href="/mod/view/{{ form.ID }}">RESPONSES</A></SPAN>
+            <SPAN><A href="/public/forms/{{ form.Name }}/{{ form.ID }}">PUBLIC</A></SPAN>
+            <SPAN><A href="/mod/download/{{ form.Name }}/{{ form.ID }}" target="_blank">DOWNLOAD</A></SPAN>
+            <SPAN><A href="/mod/edit/{{ form.ID }}">EDIT</A></SPAN>
+            <SPAN><A href="/mod/form/delete/{{ form.Name }}/{{ form.ID }}" onclick="return FormLibrary.postDeleteForm('{{ form.Name }}' , '{{ form.ID }}')" >DELETE</A></SPAN>
+          </DIV>
+          <DIV class="item-replies"></DIV>
+        </DIV>
+      </LI>
+      {% endfor %}
+    </UL>
+    <HR/>
+    {% include 'mod-footer.html' %}
+  </BODY>
+</HTML>
