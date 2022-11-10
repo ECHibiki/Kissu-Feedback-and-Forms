@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <HTML>
   <HEAD>
-    {% include 'mod-views/mod-header.twig' %}
+    {% include 'mod-header.html' %}
     <TITLE>Kissu Feedback & Forms - Replies to {{ form.ID }}</TITLE>
   </HEAD>
   <BODY>
@@ -12,11 +12,11 @@
     <OL>
     {% for reply in replies %}
       <LI id="row-{{ storagename }}-{{ reply.ID }}">
-        {% include 'mod-views/mod-reply-body.twig' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
+        {% include 'mod-reply-body.html' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
       </LI>
     {% endfor %}
     </OL>
     <HR/>
-    {% include 'mod-views/mod-footer.twig' %}
+    {% include 'mod-footer.html' %}
   </BODY>
 </HTML>

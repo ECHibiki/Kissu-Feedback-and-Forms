@@ -47,6 +47,5 @@ func ReturnFilledTemplate(template_path string, ctx_values pongo2.Context) (stri
 		}
 		tpl_in_memory[template_path] = template
 	}
-	fmt.Println(template , ctx_values)
 	return template.Execute(ctx_values)
 }

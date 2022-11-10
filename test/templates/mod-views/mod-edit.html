@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <HTML>
   <HEAD>
-    {% include 'mod-views/mod-header.twig' %}
+    {% include 'mod-header.html' %}
     <TITLE>Kissu Feedback & Forms - Edit Form {{ form.FormName }}</TITLE>
     <SCRIPT>
       function init(){
-        FormLibrary.attatchCreators({{ "{ form_number : " ~ id ~ "}"}} );
+        FormLibrary.attatchCreators({{ "{ form_number : "|add:id|add:"}"}} );
         FormLibrary.rebuildFromRaw(`{{ form_str }}` , document.getElementById("sub-create") );
         FormLibrary.setFieldsAsDisabled(false);
         document.getElementById("head-name").setAttribute("disabled", "true");
@@ -33,6 +33,6 @@
       <div id="response-container"></div>
     </FORM>
     <HR/>
-    {% include 'mod-views/mod-footer.twig' %}
+    {% include 'mod-footer.html' %}
   </BODY>
 </HTML>

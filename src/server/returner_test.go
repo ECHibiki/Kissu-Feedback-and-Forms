@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/former/returner"
-	"github.com/ECHibiki/Kissu-Feedback-and-Forms/templater"
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
 	"strings"
 	"testing"
@@ -41,10 +40,9 @@ func TestRetrieval(t *testing.T) {
 	}
 	json.Unmarshal([]byte(insertable_form_name_db.FieldJSON), &insertable_form_name)
 
-	env := templater.ReturnTemplateHandler()
 	// generics for outputting a template depending on the form ID
 	// Output should be an html page replicating the effect of marshal on the struct
-	template_id, err := returner.RenderTestingTemplate(db, env, initialization_folder, int64(1))
+	template_id, err := returner.RenderTestingTemplate(db, initialization_folder, int64(1))
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +55,7 @@ func TestRetrieval(t *testing.T) {
 		t.Error("Test template render by ID failed--\nCreation:", string(template_id), "\nAssmpton:", form_id_str)
 	}
 
-	template_name, err := returner.RenderTestingTemplate(db, env, initialization_folder, demo_form_name_check_assumed_storage_name)
+	template_name, err := returner.RenderTestingTemplate(db, initialization_folder, demo_form_name_check_assumed_storage_name)
 	if err != nil {
 		panic(err)
 	}

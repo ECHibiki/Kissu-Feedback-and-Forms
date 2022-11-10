@@ -46,7 +46,7 @@ func RenderTestingTemplate[T int64 | string](db *sql.DB, root_dir string, db_key
 	var construction_variables pongo2.Context = pongo2.Context{"form": rebuild_group}
 
 	// Render a form only used for testing
-	testing_form_render, err := templater.ReturnFilledTemplate(root_dir+"/templates/test-views/render-test.twig", construction_variables)
+	testing_form_render, err := templater.ReturnFilledTemplate(root_dir+"/templates/test-views/render-test.html", construction_variables)
 	return testing_form_render, err
 }
 

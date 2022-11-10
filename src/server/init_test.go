@@ -3,8 +3,14 @@ package main
 import (
 	prebuilder "github.com/ECHibiki/Kissu-Feedback-and-Forms/testing"
 	"github.com/ECHibiki/Kissu-Feedback-and-Forms/types"
+	"github.com/ECHibiki/Kissu-Feedback-and-Forms/templater"
+	"github.com/ECHibiki/Kissu-Feedback-and-Forms/globals"
 	"os"
+	"fmt"
 	"testing"
+	"net/http/httptest"
+	"net/http"
+
 )
 
 func TestInitialization(t *testing.T) {
@@ -131,4 +137,25 @@ func TestInitialization(t *testing.T) {
 	// DB is running and files are confirmed to exist
 	// Nothing left to do
 	// defer: remove data for the next test
+}
+
+func TestRuning(t *testing.T){
+	var initialization_folder string = "./../../test"
+	db, _ , cfg := prebuilder.DoTestingIntializations(initialization_folder)
+	defer prebuilder.CleanupTestingInitializations(initialization_folder)
+ 	templater.SetRootDir(initialization_folder + "/templates/")
+	gin_engine := routeGin(&cfg, db)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	gin_engine.ServeHTTP(w, req)
+
+	if 200 != w.Code {
+		t.Fatal("Bad code" , w.Code)
+	}
+
+	expected := "<!DOCTYPE html>\n<HTML>\n  <HEAD>\n      <META http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n  <META name=\"Language\" content=\"en\">\n  <META name=\"robots\" content=\"index, follow, all\">\n  <SCRIPT src=\"/assets/js/main(" + globals.ProjectVersion + ").js\"></SCRIPT>\n  <LINK href=\"/assets/css/style.css\" rel=\"stylesheet\">\n  <LINK rel=\"shortcut icon\" href=\"/assets/img/favicon.png\" type=\"image/png\">\n\n    <TITLE>Kissu Feedback & Forms - Home</TITLE>\n  </HEAD>\n  <BODY>\n    <P>Please access forms directly through their URL</P>\n    <HR/>\n    Feedback & Forms V" + globals.ProjectVersion + " - Product of Kissu.moe under MPL2.0<br/>\nRun it yourself from <a href=\"https://github.com/ECHibiki/Kissu-Feedback-and-Forms\">the source code</a>\n\n  </BODY>\n</HTML>\n"
+	if expected != w.Body.String() {
+		t.Fatal(fmt.Sprintf("%#v" , expected) , "\n" , fmt.Sprintf("%#v" ,w.Body.String()))
+	}
 }
