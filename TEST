@@ -1,2 +1,15 @@
 cd src/server
 go test -gcflags="-e"
+
+#https://stackoverflow.com/questions/71584005/how-to-run-multi-fuzz-test-cases-wirtten-in-one-source-file-with-go1-18
+#set -e
+#files=$(grep -r --include='**_test.go' --files-with-matches 'func Fuzz' .)
+#for file in ${files}
+#  do
+#    funcs=$(grep -oP 'func \K(Fuzz\w*)' $file)
+#    for func in ${funcs}
+#    do
+#        echo "Fuzzing $func in $file"
+#        go test -run=$func -fuzz=$func -fuzztime=10s -parallel 1
+#    done
+d#one

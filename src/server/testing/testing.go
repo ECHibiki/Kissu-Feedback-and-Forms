@@ -15,6 +15,8 @@ import (
 	"mime/multipart"
 	"os"
 	"strings"
+	"strconv"
+	"golang.org/x/crypto/bcrypt"
 	// "net/textproto"
 	// "path/filepath"
 )
@@ -80,15 +82,14 @@ func CleanupTestingInitializations(initialization_folder string) {
 	if !testTesting() {
 		return
 	}
-
 	var err error
 
 	cfg, db, err := connectToDBForTesting(initialization_folder)
 	if err != nil {
+		// os.Exit(3)
 		fmt.Printf("err: connectToDBForTesting %s\n", err.Error())
 	}
 	dropDBOnlyForTesting(db, cfg.DBName)
-
 	err = os.RemoveAll("../../test/settings/")
 	if err != nil {
 		fmt.Printf("%s" , err.Error())
@@ -117,7 +118,7 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB, types.Confi
 		DBCredentials:       "",
 		DBAddr:              "127.0.0.1",
 		ApplicationPassword: "test-password",
-		StartupPort:         ":4960",
+		StartupPort:         "4960",
 		SiteName:            "example.com",
 	}
 	cfg := types.ConfigurationSettings{
@@ -137,11 +138,36 @@ func DoTestingIntializations(initialization_folder string) (*sql.DB, types.Confi
 	if err != nil {
 		panic(err)
 	}
-
 	db := tools.QuickDBConnect(cfg)
 	tools.BuildDBTables(db)
 	return db, init_fields, cfg
 }
+
+func WritePassword(db *sql.DB, raw_password string, hash_method string, hash_scrambler string) {
+	var password_data types.PasswordsDBFields
+	if hash_method == "bcrypt" {
+		rounds, err := strconv.Atoi(hash_scrambler)
+		if err != nil {
+			panic(err)
+		}
+		hashed_bytes, err := bcrypt.GenerateFromPassword([]byte(raw_password), rounds)
+		if err != nil {
+			panic(err)
+		}
+		password_data = types.PasswordsDBFields{
+			HashedPassword: string(hashed_bytes),
+			HashSystem:     hash_method,
+			HashScrambler:  hash_scrambler,
+		}
+	} else {
+		panic("Unkown password setting used")
+	}
+	err := tools.WritePassToDB(db, password_data)
+	if err != nil {
+		panic(err)
+	}
+}
+
 
 func DoFormInitialization(form_name string, form_id string, db *sql.DB, root_dir string) {
 	var base_demo_form former.FormConstruct = former.FormConstruct{

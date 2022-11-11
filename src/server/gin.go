@@ -15,11 +15,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/flosch/pongo2"
 
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
+	"errors"
 	"time"
+	"fmt"
+	"os"
 )
 
 // Sytax for project:
@@ -471,17 +472,24 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, ) gin.Handle
 		stored_pass, err := getStoredPassword(db)
 		if err != nil && json == "" {
 			template, err := templater.ReturnFilledTemplate("mod-views/mod-login.html", pongo2.Context{"version": globals.ProjectVersion, "error": "DB Error"})
+			fmt.Printf("%s" , err.Error())
 			if err != nil {
 				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Template generation failed"})
 				return
 			}
 			servePongoTemplate(c, http.StatusInternalServerError, template)
+			return
 		} else if err != nil {
 			tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
+			return
 		}
 		ip := c.ClientIP()
 		param_pass := c.PostForm("password")
-		err = CheckPasswordValid(param_pass, stored_pass.HashedPassword)
+		if param_pass != "" {
+			err = CheckPasswordValid(param_pass, stored_pass.HashedPassword)
+		} else{
+			err = errors.New("empty password input")
+		}
 		if err != nil {
 			fmt.Printf("%s" , err.Error())
 			if json == "" {
@@ -493,6 +501,7 @@ func modPostLoginForm(db *sql.DB, cfg *types.ConfigurationSettings, ) gin.Handle
 				servePongoTemplate(c, http.StatusUnauthorized, template)
 			} else if err != nil {
 				tools.AbortWithJSONError( c , http.StatusInternalServerError , err.Error() , gin.H{"error": "Internal error, Get stored"})
+				return
 			}
 		} else {
 			session_key_unencrypted := "ADMIN" + param_pass + strconv.Itoa(int(time.Now().Unix()))
