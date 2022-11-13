@@ -12,7 +12,7 @@
     <OL>
     {% for reply in replies %}
       <LI id="row-{{ storagename }}-{{ reply.ID }}">
-        {% include 'mod-reply-body.html' with {'storagename': storagename , 'form':form , 'reply': reply}  %}
+        {% include 'mod-reply-body.html' with storagename=storagename form=form reply=reply  %}
       </LI>
     {% endfor %}
     </OL>
